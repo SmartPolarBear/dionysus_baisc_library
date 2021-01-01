@@ -9,33 +9,56 @@ namespace kbl
 
 	template<typename T>
 	concept DoubleListNode =
-	Pointer<T> &&
 	requires(T node)
 	{
-		node->next;
-		node->prev;
-		*node;
-		{ node->next }->Pointer;
-		{ node->prev }->Pointer;
+		node.get_next();
+		node.get_prev();
+		{ node.get_next() }->Pointer;
+		{ node.get_prev() }->Pointer;
 	};
 
 	template<Pointer TPtr>
 	class double_list_node
 	{
-	protected:
+	private:
 		TPtr prev{ nullptr };
 		TPtr next{ nullptr };
+	public:
+		TPtr get_prev() const
+		{
+			return prev;
+		}
+
+		void set_prev(TPtr prev)
+		{
+			double_list_node::prev = prev;
+		}
+
+		TPtr get_next() const
+		{
+			return next;
+		}
+
+		void set_next(TPtr next)
+		{
+			double_list_node::next = next;
+		}
+
+
 	};
 
-	template<DoubleListNode TChildPtr>
+	template<DoubleListNode TChild>
 	class intrusive_double_list_iterator
 	{
-	private:
-		TChildPtr inner;
-
 	public:
+		template<DoubleListNode>
+		friend
+		class intrusive_double_list;
+
 		using dummy_type = int;
-		using value_type = decltype(*inner);
+		using child_type = TChild;
+		using child_ptr_type = child_type*;
+		using value_type = child_type;
 
 		intrusive_double_list_iterator() = default;
 
@@ -60,31 +83,32 @@ namespace kbl
 			return inner != other.inner;
 		}
 
-		constexpr explicit intrusive_double_list_iterator(TChildPtr cp)
+		constexpr explicit intrusive_double_list_iterator(child_ptr_type cp)
 				: inner{ cp }
 		{
 		}
 
 		intrusive_double_list_iterator& operator++()
 		{
-			inner = inner->next;
+
+			inner = inner->get_next();
 			return *this;
 		}
 
 		intrusive_double_list_iterator& operator--()
 		{
-			inner = inner->prev;
+			inner = inner->get_prev();
 			return *this;
 		}
 
-		intrusive_double_list_iterator operator++(dummy_type)
+		const intrusive_double_list_iterator operator++(dummy_type)
 		{
 			intrusive_double_list_iterator ret{ *this };
 			++(*this);
 			return ret;
 		}
 
-		intrusive_double_list_iterator operator--(dummy_type)
+		const intrusive_double_list_iterator operator--(dummy_type)
 		{
 			intrusive_double_list_iterator ret{ *this };
 			--(*this);
@@ -96,45 +120,82 @@ namespace kbl
 			return *inner;
 		}
 
+	private:
+		child_ptr_type inner;
 	};
 
-	template<DoubleListNode TChildPtr>
+	template<DoubleListNode TChild>
 	class intrusive_double_list
 	{
 	public:
+		using child_type = TChild;
+		using child_ptr_type = child_type*;
+		using iterator_type = intrusive_double_list_iterator<child_type>;
+		using const_iterator_type = const intrusive_double_list_iterator<child_type>;
 
-
-	protected:
 		constexpr intrusive_double_list()
 		{
-			list_head_init(&head);
-			list_insert(&sentinel, head, head);
+			list_head_init(static_cast<child_type*>(&head));
 		}
 
-		
+		iterator_type begin()
+		{
+			return iterator_type{ head.get_next() };
+		}
+
+		const_iterator_type& cbegin()
+		{
+			return const_iterator_type{ head.get_next() };
+		}
+
+		iterator_type end()
+		{
+			return iterator_type{ static_cast<child_type*>(&head) };
+		}
+
+		const_iterator_type cend()
+		{
+			return iterator_type{ static_cast<child_type*>(&head) };
+		}
+
+		void remove(iterator_type iter)
+		{
+			list_remove(iter.inner);
+		}
+
+		void insert(TChild& child)
+		{
+			list_insert(&child,static_cast<child_type*>(&head),head.get_next());
+		}
+
+		void insert(TChild&& c)
+		{
+			TChild child = std::move(c);
+			insert(child);
+		}
 
 	private:
-		void list_head_init(TChildPtr head)
+		void list_head_init(child_ptr_type head)
 		{
-			head->next = head;
-			head->prev = head;
+			head->set_next(head);
+			head->set_prev(head);
 		}
 
-		void list_insert(TChildPtr newnode, TChildPtr prev, TChildPtr next)
+		void list_insert(child_ptr_type newnode, child_ptr_type prev, child_ptr_type next)
 		{
-			prev->next = newnode;
-			next->prev = newnode;
+			prev->set_next(newnode);
+			next->set_prev(newnode);
 
-			newnode->next = next;
-			newnode->prev = prev;
+			newnode->set_next(next);
+			newnode->set_prev(prev);
 		}
 
-		void list_remove(TChildPtr prev, TChildPtr next)
+		void list_remove(child_ptr_type prev, child_ptr_type next)
 		{
-			prev->next = next;
-			next->prev = prev;
+			prev->set_next(next);
+			next->set_prev(prev);
 		}
 
-		double_list_node<TChildPtr> head, sentinel;
+		double_list_node<child_ptr_type> head;
 	};
 }
