@@ -163,6 +163,7 @@ namespace kbl
 	class intrusive_double_list
 	{
 	public:
+		using size_type = size_t;
 		using child_type = TChild;
 		using child_ptr_type = child_type*;
 		using node_type = double_list_node<TChild>;
@@ -223,6 +224,17 @@ namespace kbl
 		{
 			list_insert(&child, &(*iter), iter->get_next());
 		}
+
+		void clear() noexcept
+		{
+
+		}
+
+		[[nodiscard]]size_type size() const noexcept
+		{
+
+		}
+
 
 
 	private:
