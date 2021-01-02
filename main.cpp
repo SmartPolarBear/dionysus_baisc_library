@@ -3,7 +3,7 @@
 #include "list.h"
 
 class test_class
-		: public kbl::double_list_node<test_class*>
+		: public kbl::double_list_node<test_class>
 {
 public:
 	test_class() = default;
@@ -23,6 +23,7 @@ int main()
 	auto c=test_class{ 2 };
 	auto d=test_class{ 3 };
 	auto e=test_class{ 4 };
+
 	list.insert(a);
 	list.insert(b);
 	list.insert(c);
