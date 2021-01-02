@@ -165,16 +165,12 @@ namespace kbl
 
 		void insert(TChild& child)
 		{
-			list_insert(&child,static_cast<child_type*>(&head),head.get_next());
-		}
-
-		void insert(TChild&& c)
-		{
-			TChild child = std::move(c);
-			insert(child);
+			list_insert(&child, head.get_prev(), static_cast<child_type*>(&head));
 		}
 
 	private:
+		double_list_node<child_ptr_type> head;
+
 		void list_head_init(child_ptr_type head)
 		{
 			head->set_next(head);
@@ -195,7 +191,5 @@ namespace kbl
 			prev->set_next(next);
 			next->set_prev(prev);
 		}
-
-		double_list_node<child_ptr_type> head;
 	};
 }
