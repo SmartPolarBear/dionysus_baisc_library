@@ -26,9 +26,9 @@ namespace kbl
 			return prev;
 		}
 
-		void set_prev(node_ptr_type prev)
+		void set_prev(node_ptr_type _prev)
 		{
-			double_list_node::prev = prev;
+			prev = _prev;
 		}
 
 		[[nodiscard]]node_ptr_type get_next() const
@@ -36,9 +36,18 @@ namespace kbl
 			return next;
 		}
 
-		void set_next(node_ptr_type next)
+		void set_next(node_ptr_type _next)
 		{
-			double_list_node::next = next;
+			next = _next;
+		}
+
+		void remove_self() noexcept
+		{
+			this->next->prev = this->prev;
+			this->prev->next = this->next;
+
+			this->next = nullptr;
+			this->prev = nullptr;
 		}
 	};
 
@@ -49,6 +58,7 @@ namespace kbl
 	{
 		node.get_next();
 		node.get_prev();
+		node.remove_self();
 		{ node.get_next() }->Pointer;
 		{ node.get_prev() }->Pointer;
 	};
@@ -72,6 +82,11 @@ namespace kbl
 		{
 			inner = other.inner;
 			return *this;
+		}
+
+		child_ptr_type operator->()
+		{
+			return static_cast<child_ptr_type >(inner);
 		}
 
 		bool operator==(const intrusive_double_list_iterator& other) const
@@ -180,15 +195,35 @@ namespace kbl
 			return iterator_type{ static_cast<child_type*>(&head) };
 		}
 
+		/// Remove the node pointed by iterator
+		/// \param iter
 		void remove(iterator_type iter)
 		{
 			list_remove(iter.inner);
 		}
 
+		/// Remove the child
+		/// \param c the child to remove
+		void remove(child_type& c)
+		{
+			c.remove_self();
+		}
+
+		/// Insert before head
+		/// \param child the child to insert
 		void insert(TChild& child)
 		{
 			list_insert(&child, head.get_prev(), static_cast<child_type*>(&head));
 		}
+
+		/// Insert after
+		/// \param iter insert after this iterator
+		/// \param child the child to insert
+		void insert(iterator_type iter, TChild& child)
+		{
+			list_insert(&child, &(*iter), iter->get_next());
+		}
+
 
 	private:
 		node_type head;
