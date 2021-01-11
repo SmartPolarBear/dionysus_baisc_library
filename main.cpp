@@ -1,53 +1,73 @@
 #include <iostream>
 
-#include "list.h"
+#include "intrusive_doubly_linked_list.h"
 
+using namespace kbl;
 using namespace std;
 
 class test_class
-		: public kbl::double_list_node<test_class>
 {
 public:
 	test_class() = default;
 
-	explicit test_class(int v) : value(v)
+	test_class(int v) : value(v)
 	{
 	}
 
 	int value{ 0 };
+
+public:
+	doubly_linked_node_state<test_class> state1;
+	doubly_linked_node_state<test_class> state2;
 };
 
 int main()
 {
-	kbl::intrusive_double_list<test_class> list;
-	auto a = test_class{ 0 };
-	auto b = test_class{ 1 };
-	auto c = test_class{ 2 };
-	auto d = test_class{ 3 };
-	auto e = test_class{ 4 };
-	auto f = test_class{ 10 };
+	intrusive_doubly_linked_list<test_class, &test_class::state1> idl1;
+	intrusive_doubly_linked_list<test_class, &test_class::state2> idl2;
 
-	list.insert(a);
-	list.insert(b);
-	list.insert(c);
-	list.insert(d);
-	list.insert(e);
-	list.insert(list.begin(), f);
+	test_class nodes[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
 
-	for (auto& tc:list)
+	for (int i = 0; i < 10; i++)
 	{
-		std::cout << tc.value << std::endl;
+		idl1.push_back(nodes[i]);
+		idl2.push_back(nodes[i]);
 	}
 
-	c.remove_self();
-	list.remove(d);
+	cout << "idl1:" << endl;
 
-	cout << endl << endl;
-	for (auto& tc:list)
+
+	for (auto& n:idl1)
 	{
-		std::cout << tc.value << std::endl;
+		cout << n.value << endl;
 	}
 
-	std::cout << "Hello, World!" << std::endl;
+	cout << "idl2:" << endl;
+
+	for (auto& n:idl2)
+	{
+		cout << n.value << endl;
+	}
+
+	cout << "erase idl2:" << endl;
+
+	auto iter = idl2.erase(idl2.begin());
+	cout << iter->value << endl;
+
+	cout << "idl1:" << endl;
+
+
+	for (auto& n:idl1)
+	{
+		cout << n.value << endl;
+	}
+
+	cout << "idl2:" << endl;
+
+	for (auto& n:idl2)
+	{
+		cout << n.value << endl;
+	}
+
 	return 0;
 }

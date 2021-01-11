@@ -1,3 +1,3 @@
-# STL-like Intrusive linked list
+# STL-like Intrusive Linked List
 
-this is the list implementation to be used in kernel of project-dionysus
+this is the intrusive_doubly_linked_list implementation to be used in kernel of project-dionysus
