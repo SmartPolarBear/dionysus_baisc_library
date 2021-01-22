@@ -14,7 +14,7 @@ For the sake of performance and the requirement of kernel development, all the c
 
 Feature                  |Finished ?         |Notes
 -------------------------|:-----------------:|-----------------
-list.h                   |✅                 | Only reserved interface for thread-safety
+list.h                   |✅                 | Only reserved interface for thread-safety. Further work needed. 
 avl_tree.h               |❎                 |
 hash_table.h             |❎                 |
 priority_queue.h         |❎                 |
