@@ -317,14 +317,14 @@ namespace kbl
 				{
 					auto next = i1->next;
 					list_remove(i1);
-					list_add(i1, &t_head);
+					list_add_tail(i1, &t_head);
 					i1 = next;
 				}
 				else
 				{
 					auto next = i2->next;
 					list_remove(i2);
-					list_add(i2, &t_head);
+					list_add_tail(i2, &t_head);
 					i2 = next;
 				}
 			}
@@ -333,7 +333,7 @@ namespace kbl
 			{
 				auto next = i1->next;
 				list_remove_init(i1);
-				list_add(i1, &t_head);
+				list_add_tail(i1, &t_head);
 				i1 = next;
 			}
 
@@ -341,17 +341,22 @@ namespace kbl
 			{
 				auto next = i2->next;
 				list_remove_init(i2);
-				list_add(i2, &t_head);
+				list_add_tail(i2, &t_head);
 				i2 = next;
 			}
 
 			list_swap(&head_, &t_head);
 		}
 
+		void splice(intrusive_list& other)
+		{
+			list_splice(&other.head_, &head_);
+		}
+
 
 		void splice(const_iterator_type pos, intrusive_list& other)
 		{
-			list_splice(&head_, &other.head_);
+			list_splice(&other.head_, pos.h_);
 		}
 
 
@@ -415,7 +420,7 @@ namespace kbl
 			list_head<TParent>* first = list->next, * last = list->prev;
 
 			first->prev = prev;
-			prev->next = next;
+			prev->next = first;
 
 			last->next = next;
 			next->prev = last;

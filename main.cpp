@@ -41,12 +41,13 @@ int main()
 		list2.push_back(t);
 	}
 
-	list1.merge(list2);
+	list1.splice(--list1.end(), list2);
 
 	for (auto& n:list1)
 	{
 		cout << n.value << endl;
 	}
+
 
 	return 0;
 }
