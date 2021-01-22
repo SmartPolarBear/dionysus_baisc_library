@@ -43,6 +43,19 @@ int main()
 
 	list1.splice(--list1.end(), list2);
 
+	{
+		auto t = new test_class{ 20011204 };
+		list1.push_front(t);
+	}
+
+	{
+		auto t = new test_class{ 114514 };
+		list1.push_back(t);
+	}
+
+	list1.pop_front();
+	list1.pop_back();
+
 	for (auto& n:list1)
 	{
 		cout << n.value << endl;

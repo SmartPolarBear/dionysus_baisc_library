@@ -39,6 +39,7 @@ namespace kbl
 		using head_type = list_head<value_type>;
 		using size_type = size_t;
 		using dummy_type = int;
+
 	public:
 		intrusive_list_iterator() = default;
 
@@ -157,17 +158,18 @@ namespace kbl
 		using const_iterator_type = const iterator_type;
 
 	public:
+		/// New empty list
 		constexpr intrusive_list()
 		{
 			list_init(&head_);
 		}
 
-		// isn't copiable
+		/// Isn't copiable
 		intrusive_list(const intrusive_list&) = delete;
 
 		intrusive_list& operator=(const intrusive_list&) = delete;
 
-		// movable
+		/// Move constructor
 		intrusive_list(intrusive_list&& another) noexcept
 		{
 			list_init(&head_);
@@ -185,11 +187,15 @@ namespace kbl
 			another.size_ = 0;
 		}
 
+		/// First element
+		/// \return the reference to first element
 		T& front()
 		{
 			return *head_.next->parent;
 		}
 
+		/// Last element
+		/// \return the reference to first element
 		T& back()
 		{
 			return *head_.prev->parent;
@@ -235,11 +241,28 @@ namespace kbl
 			list_add(&(item->*Link), iter.h_);
 		}
 
+		void insert(riterator_type iter, T& item)
+		{
+			list_add(&item.*Link, iter.h_);
+		}
+
+		void insert(riterator_type iter, T* item)
+		{
+			list_add(&(item->*Link), iter.h_);
+		}
+
 		void erase(iterator_type it)
 		{
 			list_remove(&it.*Link);
 		}
 
+		void erase(riterator_type it)
+		{
+			list_remove(&it.*Link);
+		}
+
+		/// Remove item by value. **it takes liner time**
+		/// \param val
 		void remove(T& val)
 		{
 			head_type* it = nullptr, t = nullptr;
@@ -254,7 +277,7 @@ namespace kbl
 
 		void pop_back()
 		{
-			list_remove(&head_.prev);
+			list_remove(head_.prev);
 		}
 
 		void push_back(T& item)
@@ -269,7 +292,7 @@ namespace kbl
 
 		void pop_front()
 		{
-			list_remove(&head_.next);
+			list_remove(head_.next);
 		}
 
 		void push_front(T& item)
@@ -291,11 +314,15 @@ namespace kbl
 			}
 		}
 
+		/// swap this and another
+		/// \param another
 		void swap(container_type& another) noexcept
 		{
 			list_swap(&head_, &another.head_);
 		}
 
+		/// Merge two **sorted** list, after that another becomes empty
+		/// \param another
 		void merge(container_type& another)
 		{
 			merge(another, [](const T& a, const T& b)
@@ -304,6 +331,10 @@ namespace kbl
 			});
 		}
 
+		/// Merge two **sorted** list, after that another becomes empty
+		/// \tparam Compare cmp(a,b) returns true if a comes before b
+		/// \param another
+		/// \param cmp
 		template<typename Compare>
 		void merge(container_type& another, Compare cmp)
 		{
@@ -348,17 +379,29 @@ namespace kbl
 			list_swap(&head_, &t_head);
 		}
 
+		/// join two lists
+		/// \param other
 		void splice(intrusive_list& other)
 		{
 			list_splice(&other.head_, &head_);
 		}
 
 
+		/// Join two lists, insert other 's item after the pos
+		/// \param pos
+		/// \param other
 		void splice(const_iterator_type pos, intrusive_list& other)
 		{
 			list_splice(&other.head_, pos.h_);
 		}
 
+		/// Join two lists, insert other 's item after the pos
+		/// \param pos
+		/// \param other
+		void splice(riterator_type pos, intrusive_list& other)
+		{
+			list_splice(&other.head_, pos.h_);
+		}
 
 		[[nodiscard]] size_type size() const
 		{
