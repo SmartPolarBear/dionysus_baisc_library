@@ -1,12 +1,25 @@
 # Data Structure to Be Used in Project-Dionysus
 
-- **list.h** linked list with the interface of locking 
-- **avl_tree.h** avl tree , providing the similar interface with STL map or set (working) 
-- **hash_table.h** a hash table providing similar interface with STL unordered_map (working) 
-- **skip_list.h** a skip list providing the similar interface with STL map or set (working) 
-- **priority_queue.h** binary heap, similar to STL priority_queue
+With the [project-dionysus](https://github.com/SmartPolarBear/project-dionysus) getting progress in future development, there's more and more demands of low-runtime-cost data structure implementations that provide the ability to be thread-safe. 
 
-For the sake of performance and the requirement of kernel development, all the classes above are designed to be *intrusive*. 
+- **list.h** linked list with the interface of locking. 
+- **avl_tree.h** avl tree , providing the similar interface with STL map or set. 
+- **hash_table.h** a hash table providing similar interface with STL unordered_map. 
+- **skip_list.h** a skip list providing the similar interface with STL map or set. 
+- **priority_queue.h** binary heap, similar to STL priority_queue.  
+
+For the sake of performance and the requirement of kernel development, all the classes above are designed to be *intrusive*.  
+
+## Progress
+
+Feature                  |Finished ?         |Notes
+-------------------------|:-----------------:|-----------------
+list.h                   |✅                 | Only reserved interface for thread-safety
+avl_tree.h               |❎                 |
+hash_table.h             |❎                 |
+priority_queue.h         |❎                 |
+skip_list.h              |❎                 |
+
 
 ## License
 Copyright (c) 2021 SmartPolarBear
