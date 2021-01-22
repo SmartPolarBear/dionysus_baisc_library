@@ -3,4 +3,4 @@ project(intrusive_list_cpp)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(intrusive_list_cpp main.cpp intrusive_doubly_linked_list.h)
+add_executable(intrusive_list_cpp main.cpp)

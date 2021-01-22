@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "intrusive_doubly_linked_list.h"
+#include "list.hpp"
 
 using namespace kbl;
 using namespace std;
@@ -14,57 +14,36 @@ public:
 	{
 	}
 
+	bool operator<(const test_class& rhs) const
+	{
+		return value < rhs.value;
+	}
+
 	int value{ 0 };
 
-public:
-	doubly_linked_node_state<test_class> state1;
-	doubly_linked_node_state<test_class> state2;
+	list_head<test_class> link{ this };
+	using list_type = intrusive_list<test_class, &test_class::link>;
 };
+
 
 int main()
 {
-	intrusive_doubly_linked_list<test_class, &test_class::state1> idl1;
-	intrusive_doubly_linked_list<test_class, &test_class::state2> idl2;
-
-	test_class nodes[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
-
-	for (int i = 0; i < 10; i++)
+	test_class::list_type list1, list2;
+	for (int i = 0; i <= 10; i++)
 	{
-		idl1.push_back(nodes[i]);
-		idl2.push_back(nodes[i]);
+		auto t = new test_class{ i };
+		list1.push_back(t);
 	}
 
-	cout << "idl1:" << endl;
-
-
-	for (auto& n:idl1)
+	for (int i = 0; i <= 10; i++)
 	{
-		cout << n.value << endl;
+		auto t = new test_class{ i * 3 };
+		list2.push_back(t);
 	}
 
-	cout << "idl2:" << endl;
+	list1.merge(list2);
 
-	for (auto& n:idl2)
-	{
-		cout << n.value << endl;
-	}
-
-	cout << "erase idl2:" << endl;
-
-	auto iter = idl2.erase(idl2.begin());
-	cout << iter->value << endl;
-
-	cout << "idl1:" << endl;
-
-
-	for (auto& n:idl1)
-	{
-		cout << n.value << endl;
-	}
-
-	cout << "idl2:" << endl;
-
-	for (auto& n:idl2)
+	for (auto& n:list1)
 	{
 		cout << n.value << endl;
 	}
