@@ -45,6 +45,34 @@ protected:
 	test_class::list_type list;
 };
 
+class ListMultipleTestFixture : public testing::Test
+{
+protected:
+	void SetUp() override
+	{
+		for (int i = 0; i < 5; i++)
+		{
+			auto t = new test_class{ 2 * i + 1 };
+			list1.push_back(t);
+		}
+
+		for (int i = 1; i <= 5; i++)
+		{
+			auto t = new test_class{ 2 * i };
+			list2.push_back(t);
+		}
+	}
+
+	void TearDown() override
+	{
+		list1.clear(true);
+		list2.clear(true);
+	}
+
+	test_class::list_type list1;
+	test_class::list_type list2;
+};
+
 TEST_F(ListSingleTestFixture, Size)
 {
 	EXPECT_EQ(list.size(), 11);
@@ -219,3 +247,42 @@ TEST_F(ListSingleTestFixture, FrontEnd)
 	EXPECT_EQ(list.back_ptr()->value, 10);
 }
 
+TEST_F(ListMultipleTestFixture, Merge)
+{
+	list1.merge(list2);
+
+	EXPECT_EQ(list1.size_slow(), list1.size());
+	EXPECT_EQ(list1.size(), 10);
+
+	EXPECT_EQ(list2.size(), list2.size_slow());
+	EXPECT_EQ(list2.size_slow(), 0);
+
+	{
+		int target_result[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, cnt = 0;
+		for (auto& i:list1)
+		{
+			EXPECT_EQ(i.value, target_result[cnt++]);
+		}
+	}
+}
+
+TEST_F(ListMultipleTestFixture, SpliceFront)
+{
+	list1.splice(list2);
+
+	EXPECT_EQ(list1.size_slow(), list1.size());
+	EXPECT_EQ(list1.size(), 10);
+
+//	EXPECT_EQ(list2.size(), list2.size_slow());
+//	EXPECT_EQ(list2.size_slow(), 0);
+
+	{
+		int target_result[] = { 2, 4, 6, 8, 10, 1, 3, 5, 7, 9, }, cnt = 0;
+		for (auto& i:list1)
+		{
+			EXPECT_EQ(i.value, target_result[cnt++]);
+		}
+	}
+
+	int a=0;
+}

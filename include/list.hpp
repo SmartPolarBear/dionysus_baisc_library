@@ -58,7 +58,18 @@ struct list_head
 	}
 
 
-	auto operator<=>(const list_head&) const = default;
+	bool operator==(const list_head& that) const
+	{
+		return parent == that.parent &&
+			   is_head == that.is_head &&
+			   next == that.next &&
+			   prev == that.prev;
+	}
+
+	bool operator!=(const list_head& that) const
+	{
+		return !(*this == that);
+	}
 };
 
 template<typename T, typename TMutex, bool Reverse = false, bool EnableLock = false>
@@ -194,7 +205,7 @@ public:
 	using mutex_type = TMutex;
 	using head_type = list_head<value_type, mutex_type>;
 	using size_type = size_t;
-	using container_type = intrusive_list<T, TMutex, Link, EnableLock>;
+	using container_type = intrusive_list<T, TMutex, Link, EnableLock, CallDeleteOnRemoval>;
 	using iterator_type = intrusive_list_iterator<T, TMutex, false, EnableLock>;
 	using riterator_type = intrusive_list_iterator<T, TMutex, true, EnableLock>;
 	using const_iterator_type = const iterator_type;
@@ -597,7 +608,9 @@ public:
 	{
 		if constexpr (EnableLock)
 		{
-			lock_guard_type g{ lock };
+			lock_guard_type g1{ lock };
+			lock_guard_type g2{ another.lock };
+
 			do_merge(another, cmp);
 		}
 		else
@@ -614,12 +627,12 @@ public:
 		{
 			lock_guard_type g{ lock };
 			size_ += other.size_;
-			list_splice(&other.head_, &head_);
+			list_splice_init(&other.head_, &head_);
 		}
 		else
 		{
 			size_ += other.size_;
-			list_splice(&other.head_, &head_);
+			list_splice_init(&other.head_, &head_);
 		}
 
 	}
@@ -635,13 +648,13 @@ public:
 			lock_guard_type g{ lock };
 			size_ += other.size_;
 
-			list_splice(&other.head_, pos.h_);
+			list_splice_init(&other.head_, pos.h_);
 		}
 		else
 		{
 			size_ += other.size_;
 
-			list_splice(&other.head_, pos.h_);
+			list_splice_init(&other.head_, pos.h_);
 		}
 
 	}
@@ -655,12 +668,12 @@ public:
 		{
 			lock_guard_type g{ lock };
 			size_ += other.size_;
-			list_splice(&other.head_, pos.h_);
+			list_splice_init(&other.head_, pos.h_);
 		}
 		else
 		{
 			size_ += other.size_;
-			list_splice(&other.head_, pos.h_);
+			list_splice_init(&other.head_, pos.h_);
 		}
 
 	}
@@ -692,13 +705,16 @@ public:
 private:
 	void do_clear(bool call_delete = false)
 	{
-		head_type* iter = nullptr, * t = nullptr;
-		list_for_safe(iter, t, &head_)
+		if (!list_empty(&head_))
 		{
-			list_remove(iter);
-			if (call_delete)
+			head_type* iter = nullptr, * t = nullptr;
+			list_for_safe(iter, t, &head_)
 			{
-				delete iter->parent;
+				list_remove(iter);
+				if (call_delete && iter->parent)
+				{
+					delete iter->parent;
+				}
 			}
 		}
 		size_ = 0;
@@ -718,7 +734,8 @@ private:
 	template<typename Compare>
 	void do_merge(container_type& another, Compare cmp)
 	{
-		if (another.head_ == head_)return;
+		if (head_ == another.head_)return;
+
 		size_ += another.size_;
 
 		head_type t_head{ nullptr };
@@ -757,6 +774,7 @@ private:
 			i2 = next;
 		}
 
+		another.size_ = 0;
 		list_swap(&head_, &t_head);
 	}
 
@@ -803,9 +821,10 @@ private:
 private:
 
 	// initialize the list
+	template<bool LockHeld = false>
 	static inline void list_init(head_type* head)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g{ head->lock };
 			util_list_init(head);
@@ -817,9 +836,10 @@ private:
 	}
 
 // add the new node after the specified head_
+	template<bool LockHeld = false>
 	static inline void list_add(head_type* newnode, head_type* head)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g1{ newnode->lock };
 			lock_guard_type g2{ head->lock };
@@ -833,9 +853,10 @@ private:
 	}
 
 // add the new node before the specified head_
+	template<bool LockHeld = false>
 	static inline void list_add_tail(head_type* newnode, head_type* head)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g1{ newnode->lock };
 			lock_guard_type g2{ head->lock };
@@ -851,9 +872,10 @@ private:
 	}
 
 // delete the entry
+	template<bool LockHeld = false>
 	static inline void list_remove(head_type* entry)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g1{ entry->lock };
 
@@ -871,9 +893,10 @@ private:
 		}
 	}
 
+	template<bool LockHeld = false>
 	static inline void list_remove_init(head_type* entry)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g1{ entry->lock };
 
@@ -882,7 +905,7 @@ private:
 			entry->prev = nullptr;
 			entry->next = nullptr;
 
-			list_init(entry);
+			util_list_init(entry);
 		}
 		else
 		{
@@ -891,18 +914,16 @@ private:
 			entry->prev = nullptr;
 			entry->next = nullptr;
 
-			list_init(entry);
+			util_list_init(entry);
 		}
 	}
 
 // replace the old entry with newnode
+	template<bool LockHeld = false>
 	static inline void list_replace(head_type* old, head_type* newnode)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{ old->lock };
-			lock_guard_type g2{ newnode->lock };
-
 			newnode->next = old->next;
 			newnode->next->prev = newnode;
 			newnode->prev = old->prev;
@@ -918,9 +939,10 @@ private:
 
 	}
 
+	template<bool LockHeld = false>
 	static inline bool list_empty(const head_type* head)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g{ head->lock };
 
@@ -932,29 +954,29 @@ private:
 		}
 	}
 
-
+	template<bool LockHeld = false>
 	static inline void list_swap(head_type* e1, head_type* e2)
 	{
-		if constexpr (EnableLock)
+		if constexpr (EnableLock && !LockHeld)
 		{
 			lock_guard_type g1{ e1->lock };
 			lock_guard_type g2{ e2->lock };
 
 			auto* pos = e2->prev;
-			list_remove(e2);
-			list_replace(e1, e2);
+			list_remove_init<true>(e2);
+			list_replace<true>(e1, e2);
 
 			if (pos == e1)
 			{
 				pos = e2;
 			}
 
-			list_add(e1, pos);
+			list_add<true>(e1, pos);
 		}
 		else
 		{
 			auto* pos = e2->prev;
-			list_remove(e2);
+			list_remove_init(e2);
 			list_replace(e1, e2);
 
 			if (pos == e1)
@@ -966,18 +988,17 @@ private:
 		}
 	}
 
-
 	/// \tparam TParent
 	/// \param list	the new list to add
 	/// \param head the place to add it in the list
-	static inline void list_splice(const head_type* list, head_type* head)
+	static inline void list_splice(head_type* list, head_type* head)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g1{ list->lock };
 			lock_guard_type g2{ head->lock };
 
-			if (!list_empty(list))
+			if (!list_empty<true>(list))
 			{
 				util_list_splice(list, head, head->next);
 			}
@@ -987,6 +1008,32 @@ private:
 			if (!list_empty(list))
 			{
 				util_list_splice(list, head, head->next);
+			}
+		}
+	}
+
+	/// \tparam TParent
+	/// \param list	the new list to add
+	/// \param head the place to add it in the list
+	static inline void list_splice_init(head_type* list, head_type* head)
+	{
+		if constexpr (EnableLock)
+		{
+			lock_guard_type g1{ list->lock };
+			lock_guard_type g2{ head->lock };
+
+			if (!list_empty<true>(list))
+			{
+				util_list_splice(list, head, head->next);
+				util_list_init(list);
+			}
+		}
+		else
+		{
+			if (!list_empty(list))
+			{
+				util_list_splice(list, head, head->next);
+				util_list_init(list);
 			}
 		}
 	}
