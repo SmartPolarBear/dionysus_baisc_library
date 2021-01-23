@@ -20,6 +20,35 @@ struct list_head
 	{
 	}
 
+	list_head(list_head&& another)
+	{
+		parent = another.parent;
+		is_head = another.is_head;
+		next = another.next;
+		prev = another.prev;
+
+		another.parent = nullptr;
+		another.is_head = false;
+		another.next = &another;
+		another.prev = &another;
+	}
+
+	list_head(const list_head& another)
+	{
+		parent = another.parent;
+		is_head = another.is_head;
+		next = another.next;
+		prev = another.prev;
+	}
+
+	list_head& operator=(const list_head& another)
+	{
+		parent = another.parent;
+		is_head = another.is_head;
+		next = another.next;
+		prev = another.prev;
+	}
+
 	explicit list_head(TParent* p) : parent{ p }, is_head{ false }, next{ this }, prev{ this }
 	{
 	}
@@ -37,7 +66,7 @@ class intrusive_list_iterator
 {
 public:
 
-	template<typename S, typename SMutex, list_head<S, SMutex> S::*, bool E,bool D>
+	template<typename S, typename SMutex, list_head<S, SMutex> S::*, bool E, bool D>
 	friend
 	class intrusive_list;
 

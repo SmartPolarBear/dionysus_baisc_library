@@ -9,11 +9,9 @@
 using namespace kbl;
 using namespace std;
 
-void test_list();
 
 int main()
 {
-	test_list();
 
 	return 0;
 }
