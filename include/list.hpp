@@ -389,6 +389,8 @@ public:
 
 	void erase(iterator_type it, bool call_delete = CallDeleteOnRemoval)
 	{
+		if (list_empty(&head_))return;
+
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
@@ -407,6 +409,8 @@ public:
 
 	void erase(riterator_type it, bool call_delete = CallDeleteOnRemoval)
 	{
+		if (list_empty(&head_))return;
+
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
@@ -427,6 +431,9 @@ public:
 	/// \param val
 	void remove(T& val, bool call_delete = CallDeleteOnRemoval)
 	{
+		if (list_empty(&head_))return;
+
+
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
@@ -445,6 +452,8 @@ public:
 
 	void pop_back(bool call_delete = CallDeleteOnRemoval)
 	{
+		if (list_empty(&head_))return;
+
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
@@ -500,6 +509,8 @@ public:
 
 	void pop_front(bool call_delete = CallDeleteOnRemoval)
 	{
+		if (list_empty(&head_))return;
+
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
@@ -626,12 +637,17 @@ public:
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
+
 			size_ += other.size_;
+			other.size_ = 0;
+
 			list_splice_init(&other.head_, &head_);
 		}
 		else
 		{
 			size_ += other.size_;
+			other.size_ = 0;
+
 			list_splice_init(&other.head_, &head_);
 		}
 
@@ -646,13 +662,17 @@ public:
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
+
 			size_ += other.size_;
+			other.size_ = 0;
 
 			list_splice_init(&other.head_, pos.h_);
+
 		}
 		else
 		{
 			size_ += other.size_;
+			other.size_ = 0;
 
 			list_splice_init(&other.head_, pos.h_);
 		}
@@ -667,12 +687,17 @@ public:
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
+
 			size_ += other.size_;
+			other.size_ = 0;
+
 			list_splice_init(&other.head_, pos.h_);
 		}
 		else
 		{
 			size_ += other.size_;
+			other.size_ = 0;
+
 			list_splice_init(&other.head_, pos.h_);
 		}
 
@@ -703,6 +728,8 @@ public:
 	}
 
 private:
+
+
 	void do_clear(bool call_delete = false)
 	{
 		if (!list_empty(&head_))

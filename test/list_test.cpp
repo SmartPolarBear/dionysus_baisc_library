@@ -43,6 +43,7 @@ protected:
 	}
 
 	test_class::list_type list;
+	test_class::list_type empty_list;
 };
 
 class ListMultipleTestFixture : public testing::Test
@@ -77,10 +78,19 @@ TEST_F(ListSingleTestFixture, Size)
 {
 	EXPECT_EQ(list.size(), 11);
 	EXPECT_EQ(list.size_slow(), 11);
+
+	EXPECT_EQ(empty_list.size(), 0);
+	EXPECT_EQ(empty_list.size_slow(), 0);
+
 }
 
 TEST_F(ListSingleTestFixture, ForIteration)
 {
+	//empty
+	for (auto& i:empty_list)
+	{
+	}
+
 	// i is a copy.
 	{
 		int counter = 0;
@@ -132,6 +142,10 @@ TEST_F(ListSingleTestFixture, IterationByIterators)
 		EXPECT_EQ(iter->value, (10 + counter++));
 	}
 
+	// empty
+	for (auto iter = empty_list.begin(); iter != empty_list.end(); iter++)
+	{
+	}
 }
 
 // reverse
@@ -150,6 +164,11 @@ TEST_F(ListSingleTestFixture, IterationByReverseIterators)
 	{
 		EXPECT_EQ(iter->value, (999 + counter--));
 	}
+
+	// empty
+	for (auto iter = empty_list.rbegin(); iter != empty_list.rend(); iter++)
+	{
+	}
 }
 
 // const
@@ -161,12 +180,21 @@ TEST_F(ListSingleTestFixture, IterationByConstIterators)
 		EXPECT_EQ(iter->value, counter++);
 	}
 
+	// empty
+	for (auto iter = empty_list.cbegin(); iter != empty_list.cend(); iter++)
+	{
+	}
+
 }
 
 
 TEST_F(ListSingleTestFixture, Clear)
 {
 	list.clear();
+	empty_list.clear();
+
+	EXPECT_EQ(empty_list.size(), 0);
+	EXPECT_EQ(empty_list.size_slow(), 0);
 
 	EXPECT_EQ(list.size(), 0);
 	EXPECT_EQ(list.size_slow(), 0);
@@ -183,6 +211,12 @@ TEST_F(ListSingleTestFixture, Removal)
 
 	EXPECT_EQ(list.begin()->value, 1);
 	EXPECT_EQ(list.rbegin()->value, 9);
+
+	empty_list.pop_front();
+	empty_list.pop_back();
+
+	EXPECT_EQ(empty_list.size(), 0);
+	EXPECT_EQ(empty_list.size_slow(), 0);
 
 	{
 		auto iter = list.begin();
@@ -273,8 +307,8 @@ TEST_F(ListMultipleTestFixture, SpliceFront)
 	EXPECT_EQ(list1.size_slow(), list1.size());
 	EXPECT_EQ(list1.size(), 10);
 
-//	EXPECT_EQ(list2.size(), list2.size_slow());
-//	EXPECT_EQ(list2.size_slow(), 0);
+	EXPECT_EQ(list2.size(), list2.size_slow());
+	EXPECT_EQ(list2.size_slow(), 0);
 
 	{
 		int target_result[] = { 2, 4, 6, 8, 10, 1, 3, 5, 7, 9, }, cnt = 0;
@@ -283,6 +317,4 @@ TEST_F(ListMultipleTestFixture, SpliceFront)
 			EXPECT_EQ(i.value, target_result[cnt++]);
 		}
 	}
-
-	int a=0;
 }
