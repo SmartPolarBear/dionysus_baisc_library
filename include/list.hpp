@@ -655,7 +655,7 @@ public:
 
 
 	/// Join two lists, insert other 's item after the pos
-	/// \param pos
+	/// \param pos insert after it
 	/// \param other
 	void splice(const_iterator_type pos, intrusive_list& other)
 	{
@@ -680,7 +680,7 @@ public:
 	}
 
 	/// Join two lists, insert other 's item after the pos
-	/// \param pos
+	/// \param pos insert after it
 	/// \param other
 	void splice(riterator_type pos, intrusive_list& other)
 	{

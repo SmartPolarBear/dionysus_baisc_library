@@ -318,3 +318,23 @@ TEST_F(ListMultipleTestFixture, SpliceFront)
 		}
 	}
 }
+
+TEST_F(ListMultipleTestFixture, SpliceOnCertainPos)
+{
+	list1.splice(++list1.begin(), list2);
+
+	EXPECT_EQ(list1.size_slow(), list1.size());
+	EXPECT_EQ(list1.size(), 10);
+
+	EXPECT_EQ(list2.size(), list2.size_slow());
+	EXPECT_EQ(list2.size_slow(), 0);
+
+	{
+		int target_result[] = { 1, 3, 2, 4, 6, 8, 10, 5, 7, 9, }, cnt = 0;
+		for (auto& i:list1)
+		{
+			EXPECT_EQ(i.value, target_result[cnt++]);
+		}
+	}
+}
+
