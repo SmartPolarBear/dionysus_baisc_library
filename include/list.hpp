@@ -382,14 +382,14 @@ public:
 		{
 			lock_guard_type g{ lock };
 
-			list_remove(&it.*Link);
-			if (call_delete)delete it.*Link.parent;
+			list_remove(it.h_);
+			if (call_delete)delete it.h_->parent;
 			--size_;
 		}
 		else
 		{
-			list_remove(&it.*Link);
-			if (call_delete)delete it.*Link.parent;
+			list_remove(it.h_);
+			if (call_delete)delete it.h_->parent;
 			--size_;
 		}
 	}
@@ -400,14 +400,14 @@ public:
 		{
 			lock_guard_type g{ lock };
 
-			list_remove(&it.*Link);
-			if (call_delete)delete it.*Link.parent;
+			list_remove(it.h_);
+			if (call_delete)delete it.h_->parent;
 			--size_;
 		}
 		else
 		{
-			list_remove(&it.*Link);
-			if (call_delete)delete it.*Link.parent;
+			list_remove(it.h_);
+			if (call_delete)delete it.h_->parent;
 			--size_;
 		}
 	}
@@ -419,13 +419,13 @@ public:
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
-			list_remove(&val->*Link);
+			list_remove(&(val.*Link));
 			if (call_delete)delete &val;
 			--size_;
 		}
 		else
 		{
-			list_remove(&val->*Link);
+			list_remove(&(val.*Link));
 			if (call_delete)delete &val;
 			--size_;
 		}
