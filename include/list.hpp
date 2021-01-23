@@ -37,7 +37,7 @@ class intrusive_list_iterator
 {
 public:
 
-	template<typename S, typename SMutex, list_head<S, SMutex> S::*, bool E>
+	template<typename S, typename SMutex, list_head<S, SMutex> S::*, bool E,bool D>
 	friend
 	class intrusive_list;
 
@@ -153,7 +153,11 @@ private:
 #define list_for_safe(pos, n, head) \
     for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
 
-template<typename T, typename TMutex, list_head<T, TMutex> T::*Link, bool EnableLock = false>
+template<typename T,
+		typename TMutex,
+		list_head<T, TMutex> T::*Link,
+		bool EnableLock = false,
+		bool CallDeleteOnRemoval = false>
 class intrusive_list
 {
 public:
@@ -232,11 +236,21 @@ public:
 		return *head_.next->parent;
 	}
 
+	T* front_ptr()
+	{
+		return head_.next->parent;
+	}
+
 	/// Last element
 	/// \return the reference to first element
 	T& back()
 	{
 		return *head_.prev->parent;
+	}
+
+	T* back_ptr()
+	{
+		return head_.prev->parent;
 	}
 
 	iterator_type begin()
@@ -333,66 +347,81 @@ public:
 		}
 	}
 
-	void erase(iterator_type it)
+	void erase(iterator_type it, bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
+
 			list_remove(&it.*Link);
+			if (call_delete)delete it.*Link.parent;
 			--size_;
 		}
 		else
 		{
 			list_remove(&it.*Link);
+			if (call_delete)delete it.*Link.parent;
 			--size_;
 		}
 	}
 
-	void erase(riterator_type it)
+	void erase(riterator_type it, bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
+
 			list_remove(&it.*Link);
+			if (call_delete)delete it.*Link.parent;
 			--size_;
 		}
 		else
 		{
 			list_remove(&it.*Link);
+			if (call_delete)delete it.*Link.parent;
 			--size_;
 		}
 	}
 
 	/// Remove item by value. **it takes liner time**
 	/// \param val
-	void remove(T& val)
+	void remove(T& val, bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
 			list_remove(&val->*Link);
+			if (call_delete)delete &val;
 			--size_;
 		}
 		else
 		{
 			list_remove(&val->*Link);
+			if (call_delete)delete &val;
 			--size_;
 		}
 
 	}
 
-	void pop_back()
+	void pop_back(bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
-			list_remove(head_.prev);
+			auto entry = head_.prev;
+			list_remove(entry);
 			--size_;
+
+			if (call_delete)delete entry->parent;
 		}
 		else
 		{
 			list_remove(head_.prev);
+			auto entry = head_.prev;
+			list_remove(entry);
 			--size_;
+
+			if (call_delete)delete entry->parent;
 		}
 
 	}
@@ -429,18 +458,24 @@ public:
 
 	}
 
-	void pop_front()
+	void pop_front(bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
-			list_remove(head_.next);
+			auto entry = head_.next;
+			list_remove(entry);
 			--size_;
+
+			if (call_delete)delete entry->parent;
 		}
 		else
 		{
-			list_remove(head_.next);
+			auto entry = head_.next;
+			list_remove(entry);
 			--size_;
+
+			if (call_delete)delete entry->parent;
 		}
 
 	}
@@ -477,19 +512,17 @@ public:
 
 	}
 
-	void clear()
+	void clear(bool call_delete = CallDeleteOnRemoval)
 	{
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
-			do_clear();
-
+			do_clear(call_delete);
 		}
 		else
 		{
-			do_clear();
+			do_clear(call_delete);
 		}
-
 	}
 
 	/// swap this and another
@@ -628,12 +661,16 @@ public:
 	}
 
 private:
-	void do_clear()
+	void do_clear(bool call_delete = false)
 	{
 		head_type* iter = nullptr, * t = nullptr;
 		list_for_safe(iter, t, &head_)
 		{
 			list_remove(iter);
+			if (call_delete)
+			{
+				delete iter->parent;
+			}
 		}
 		size_ = 0;
 	}
