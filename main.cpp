@@ -13,7 +13,7 @@ void test_list();
 
 int main()
 {
-//	test_list();
+	test_list();
 
 	return 0;
 }
