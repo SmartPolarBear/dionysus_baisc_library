@@ -2,8 +2,6 @@
 
 #include "lock_guard.h"
 
-#include <compare>
-
 namespace kbl
 {
 // linked list head_
@@ -43,6 +41,8 @@ struct list_head
 
 	list_head& operator=(const list_head& another)
 	{
+		if (*this == another)return *this;
+
 		parent = another.parent;
 		is_head = another.is_head;
 		next = another.next;
