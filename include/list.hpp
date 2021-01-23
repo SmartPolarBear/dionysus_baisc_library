@@ -107,7 +107,7 @@ public:
 
 	intrusive_list_iterator& operator=(const intrusive_list_iterator& another)
 	{
-		if (another.h_ == h_)return *this;
+		if (this == &another)return *this;
 
 		h_ = another.h_;
 		return *this;
