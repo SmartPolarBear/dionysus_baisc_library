@@ -613,12 +613,11 @@ public:
 		if constexpr (EnableLock)
 		{
 			lock_guard_type g{ lock };
-			do_size_slow();
-
+			return do_size_slow();
 		}
 		else
 		{
-			do_size_slow();
+			return do_size_slow();
 		}
 
 	}
@@ -639,7 +638,7 @@ private:
 		size_ = 0;
 	}
 
-	size_type do_size_slow()
+	size_type do_size_slow() const
 	{
 		size_type sz = 0;
 		head_type* iter = nullptr;
