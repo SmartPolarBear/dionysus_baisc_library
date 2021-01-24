@@ -21,7 +21,7 @@ public:
 
 	int value{ 0 };
 
-	list_head<test_class, std::mutex> link{ this };
+	list_link<test_class, std::mutex> link{ this };
 	using list_type = intrusive_list<test_class, std::mutex, &test_class::link, true, true>;
 };
 
