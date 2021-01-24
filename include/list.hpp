@@ -18,7 +18,7 @@ struct list_head
 	{
 	}
 
-	list_head(list_head&& another)
+	list_head(list_head&& another) noexcept
 	{
 		parent = another.parent;
 		is_head = another.is_head;
@@ -41,7 +41,7 @@ struct list_head
 
 	list_head& operator=(const list_head& another)
 	{
-		if (*this == another)return *this;
+		if (this == &another)return *this;
 
 		parent = another.parent;
 		is_head = another.is_head;
