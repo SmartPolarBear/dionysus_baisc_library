@@ -49,6 +49,40 @@ public:
 	using key_type = decltype(*Key);
 	using link_type = avl_tree_link<T, Key>;
 private:
+	static inline link_type* avl_left_rotate(link_type* node)
+	{
+		auto right = node->right;
+		auto tr = right->left;
+
+		right->left = node;
+		node->parent = right->left;
+
+		node->right = tr;
+		tr->parent = node->right;
+
+		avl_update_height(node);
+		avl_update_height(right);
+
+		return right;
+	}
+
+	static inline link_type* avl_right_rotate(link_type* node)
+	{
+		auto left = node->left;
+		auto tr = left->right;
+
+		left->right = node;
+		node->parent = left->right;
+
+		node->left = tr;
+		tr->parent = node->left;
+
+		avl_update_height(node);
+		avl_update_height(left);
+
+		return left;
+	}
+
 	static inline size_type avl_tree_height(link_type* root)
 	{
 		return root == nullptr ? 0 : root->height;
@@ -69,7 +103,7 @@ private:
 		return util_avl_tree_height(root->right) - util_avl_tree_height(root->left);
 	}
 
-	static inline void avl_rebalance(link_type* root)
+	static inline link_type* avl_rebalance(link_type* root)
 	{
 		// find the minimum unbalanced subtree
 		auto bf = avl_balance_factor(root);
@@ -79,12 +113,36 @@ private:
 			bf = avl_balance_factor(root);
 		}
 
-		if (!root)
+		if (!root) // no need to rebalance
 		{
 			return;
 		}
 
+		auto l_bf = avl_balance_factor(root->left);
+		auto r_bf = avl_balance_factor(root->right);
 
+		if (bf > 1 && l_bf > 0) // L
+		{
+			return avl_right_rotate(root);
+		}
+		else if (bf > 1 && l_bf <= 0) // LR
+		{
+			root->left = avl_left_rotate(root->left);
+			return avl_right_rotate(root);
+		}
+		else if (bf < -1 && r_bf > 0) // RL
+		{
+			root->right = avl_right_rotate(root->right);
+			return avl_left_rotate(root);
+		}
+		else if (bf < -1 && r_bf <= 0) //RR
+		{
+			return avl_left_rotate(root);
+		}
+		else
+		{
+			// do nothing
+		}
 	}
 
 	static inline void avl_insert(link_type* newnode, link_type* parent, link_type** newpos)
