@@ -15,7 +15,7 @@ struct avl_tree_link
 
 	avl_tree_link* left, * right, * parent;
 
-	avl_tree_link()
+	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
 			  is_root(false),
 			  height(1),
@@ -25,15 +25,142 @@ struct avl_tree_link
 	{
 	}
 
+	[[nodiscard]] explicit avl_tree_link(bool root)
+			: owner(nullptr),
+			  is_root(root),
+			  height(1),
+			  left(nullptr),
+			  right(nullptr),
+			  parent(nullptr)
+	{
+	}
 
+	[[nodiscard]] explicit avl_tree_link(TParent* owner)
+			: owner(owner),
+			  is_root(false),
+			  height(1),
+			  left(nullptr),
+			  right(nullptr),
+			  parent(nullptr)
+	{
+	}
 };
 
 template<typename T, auto T::*Key,
 		avl_tree_link<T, Key> T::*Link,
+		typename TCmp = less<T>,
+		bool Reverse = false,
 		bool EnableLock = false>
 class avl_tree_iterator
 {
+public:
 
+	template<typename S, auto S::*K,
+			avl_tree_link<S, Key> S::*L,
+			typename,
+			bool>
+	class avl_tree;
+
+	using value_type = T;
+	using size_type = size_t;
+	using ssize_type = int64_t;
+	using key_type = decltype(*Key);
+	using link_type = avl_tree_link<T, Key>;
+	using container_type = avl_tree<T, Key, Link, TCmp, EnableLock>;
+
+	using dummy_type = int;
+
+public:
+	avl_tree_iterator() = default;
+
+	explicit avl_tree_iterator(link_type* h) :
+			h_(h)
+	{
+	}
+
+	avl_tree_iterator(avl_tree_iterator
+	&& another) noexcept
+	{
+		h_ = another.h_;
+		another.h_ = nullptr;
+	}
+
+	avl_tree_iterator(const avl_tree_iterator& another)
+	{
+		h_ = another.h_;
+	}
+
+	avl_tree_iterator& operator=(const avl_tree_iterator& another)
+	{
+		if (this == &another)return *this;
+
+		h_ = another.h_;
+		return *this;
+	}
+
+
+	T& operator*()
+	{
+		return *operator->();
+	}
+
+	T* operator->()
+	{
+		return h_->parent;
+	}
+
+	bool operator==(avl_tree_iterator const& other) const
+	{
+		return h_ == other.h_;
+	}
+
+	bool operator!=(avl_tree_iterator const& other) const
+	{
+		return !(*this == other);
+	}
+
+	avl_tree_iterator& operator++()
+	{
+		if constexpr (Reverse)
+		{
+			container_type::avl_prev(h_);
+		}
+		else
+		{
+			container_type::avl_next(h_);
+		}
+		return *this;
+	}
+
+	avl_tree_iterator operator++(dummy_type) noexcept
+	{
+		avl_tree_iterator rc(*this);
+		operator++();
+		return rc;
+	}
+
+	avl_tree_iterator& operator--()
+	{
+		if constexpr (Reverse)
+		{
+			container_type::avl_next(h_);
+		}
+		else
+		{
+			container_type::avl_prev(h_);
+		}
+		return *this;
+	}
+
+	avl_tree_iterator operator--(dummy_type) noexcept
+	{
+		avl_tree_iterator rc(*this);
+		operator--();
+		return rc;
+	}
+
+private:
+	link_type* h_;
 };
 
 template<typename T, auto T::*Key,
@@ -46,8 +173,85 @@ public:
 	using value_type = T;
 	using size_type = size_t;
 	using ssize_type = int64_t;
-	using key_type = decltype(*Key);
 	using link_type = avl_tree_link<T, Key>;
+	using iterator_type = avl_tree_iterator<T, Key, Link, TCmp, false, EnableLock>;
+
+	template<typename S, auto S::*K,
+			avl_tree_link<S, K> S::*L,
+			typename C,
+			bool,
+			bool>
+	friend
+	class avl_tree_iterator;
+
+	bool insert(T& val)
+	{
+		link_type* root_ptr = &root;
+		link_type** newpos = &root_ptr, * parent = nullptr;
+		while (*newpos)
+		{
+			parent = *newpos;
+			auto cmp_val = cmp_(val.*Key, (*newpos)->owner->*Key);
+			if (cmp_val < 0)
+			{
+				newpos = &((*newpos)->left);
+			}
+			else if (cmp_val == 0)
+			{
+				return false;
+			}
+			else
+			{
+				newpos = &((*newpos)->right);
+			}
+		}
+
+		avl_insert(&(val.*Link), parent, newpos);
+
+		return true;
+	}
+
+	bool remove(T& val)
+	{
+		link_type** newpos = &root, * parent = nullptr, * node = nullptr;
+		while (*newpos)
+		{
+			parent = *newpos;
+			auto cmp_val = cmp_(val->*Key, (*newpos)->owner->*Key);
+			if (cmp_val < 0)
+			{
+				newpos = &((*newpos)->left);
+			}
+			else if (cmp_val == 0)
+			{
+				node = *newpos;
+			}
+			else
+			{
+				newpos = &((*newpos)->right);
+			}
+		}
+
+		if (node == nullptr)
+		{
+			return false;
+		}
+
+		avl_remove(node);
+
+		return true;
+	}
+
+	iterator_type begin()
+	{
+		return iterator_type{ avl_first(&root) };
+	}
+
+	iterator_type end()
+	{
+		return iterator_type{ nullptr };
+	}
+
 private:
 	static inline link_type* avl_left_rotate(link_type* node)
 	{
@@ -88,7 +292,7 @@ private:
 		return root == nullptr ? 0 : root->height;
 	}
 
-	static inline size_type avl_update_height(link_type* node)
+	static inline void avl_update_height(link_type* node)
 	{
 		node->height = std::max(avl_tree_height(node->left), avl_tree_height(node->right)) + 1;
 	}
@@ -100,12 +304,13 @@ private:
 			return 0;
 		}
 
-		return util_avl_tree_height(root->right) - util_avl_tree_height(root->left);
+		return avl_tree_height(root->right) - avl_tree_height(root->left);
 	}
 
 	static inline link_type* avl_rebalance(link_type* root)
 	{
 		// find the minimum unbalanced subtree
+		auto old_root = root;
 		auto bf = avl_balance_factor(root);
 		while (root && bf >= -1 && bf <= 1)
 		{
@@ -115,7 +320,7 @@ private:
 
 		if (!root) // no need to rebalance
 		{
-			return;
+			return old_root;
 		}
 
 		auto l_bf = avl_balance_factor(root->left);
@@ -141,7 +346,8 @@ private:
 		}
 		else
 		{
-			// do nothing
+			// should not reach here
+			return nullptr;
 		}
 	}
 
@@ -263,7 +469,8 @@ private:
 
 private:
 	size_type size_{ 0 };
-
+	link_type root{ true };
+	TCmp cmp_{};
 };
 
 }

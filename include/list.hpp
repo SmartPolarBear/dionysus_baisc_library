@@ -614,7 +614,7 @@ public:
 	}
 
 	/// Merge two **sorted** list, after that another becomes empty
-	/// \tparam Compare cmp(a,b) returns true if a comes before b
+	/// \tparam Compare cmp_(a,b) returns true if a comes before b
 	/// \param another
 	/// \param cmp
 	template<typename Compare>
