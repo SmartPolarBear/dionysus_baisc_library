@@ -2,6 +2,8 @@
 
 #include "list.hpp"
 
+#include <algorithm>
+
 using namespace kbl;
 using namespace std;
 
@@ -279,6 +281,18 @@ TEST_F(ListSingleTestFixture, FrontEnd)
 
 	EXPECT_EQ(list.front_ptr()->value, 0);
 	EXPECT_EQ(list.back_ptr()->value, 10);
+}
+
+TEST_F(ListSingleTestFixture, STLFuncs)
+{
+	{
+//		auto iter = std::find_if(list.begin(), list.end(), [](const test_class& t)
+//		{
+//			return t.value == 0;
+//		});
+//
+//		EXPECT_EQ(iter, list.begin());
+	}
 }
 
 TEST_F(ListMultipleTestFixture, Merge)
