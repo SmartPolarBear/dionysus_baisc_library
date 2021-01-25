@@ -208,6 +208,7 @@ public:
 
 		avl_insert(&(val.*Link), parent, newpos);
 
+		++size_;
 		return true;
 	}
 
@@ -238,8 +239,18 @@ public:
 		}
 
 		avl_remove(node);
-
+		--size_;
 		return true;
+	}
+
+	[[nodiscard]] size_type size() const
+	{
+		return size_;
+	}
+
+	[[nodiscard]] bool empty() const
+	{
+		return size_ == 0;
 	}
 
 	iterator_type begin()

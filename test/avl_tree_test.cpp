@@ -27,7 +27,7 @@ public:
 	using tree_type = avl_tree<test_class, &test_class::value, &test_class::link>;
 };
 
-class ListSingleTestFixture : public testing::Test
+class AVLTreeSingleTestFixture : public testing::Test
 {
 protected:
 	void SetUp() override
@@ -48,3 +48,12 @@ protected:
 	test_class::tree_type tree;
 	test_class::tree_type empty_tree;
 };
+
+TEST_F(AVLTreeSingleTestFixture, Size)
+{
+	EXPECT_EQ(tree.size(), 11);
+	EXPECT_EQ(empty_tree.size(), 0);
+
+	EXPECT_EQ(tree.empty(), false);
+	EXPECT_EQ(empty_tree.empty(), true);
+}
