@@ -2,6 +2,8 @@
 
 #include <utility.h>
 
+#include <compare>
+
 namespace kbl
 {
 
@@ -10,39 +12,28 @@ struct avl_tree_link
 {
 	TParent* owner;
 
-	bool is_root;
 	size_t height;
 
 	avl_tree_link* left, * right, * parent;
 
 	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
-			  is_root(false),
 			  height(1),
 			  left(nullptr),
 			  right(nullptr),
 			  parent(nullptr)
 	{
+
 	}
 
-	[[nodiscard]] explicit avl_tree_link(bool root)
-			: owner(nullptr),
-			  is_root(root),
+	[[nodiscard]] explicit avl_tree_link(TParent* on)
+			: owner(on),
 			  height(1),
 			  left(nullptr),
 			  right(nullptr),
 			  parent(nullptr)
 	{
-	}
 
-	[[nodiscard]] explicit avl_tree_link(TParent* owner)
-			: owner(owner),
-			  is_root(false),
-			  height(1),
-			  left(nullptr),
-			  right(nullptr),
-			  parent(nullptr)
-	{
 	}
 };
 
@@ -163,9 +154,26 @@ private:
 	link_type* h_;
 };
 
-template<typename T, auto T::*Key,
+template<typename T>
+concept AVLTreeKey=
+requires(T a, T b)
+{
+	a <=> b;
+};
+
+template<AVLTreeKey T>
+struct avl_default_cmp
+{
+	auto operator()(const T& a, const T& b)
+	{
+		return a <=> b;
+	}
+};
+
+template<typename T, AVLTreeKey TKey,
+		TKey T::*Key,
 		avl_tree_link<T, Key> T::*Link,
-		typename TCmp= less<T>,
+		typename TCmp= avl_default_cmp<TKey>,
 		bool EnableLock = false>
 class avl_tree
 {
@@ -186,8 +194,13 @@ public:
 
 	bool insert(T& val)
 	{
-		link_type* root_ptr = &root;
-		link_type** newpos = &root_ptr, * parent = nullptr;
+		if (root_ == nullptr)
+		{
+			root_ = &(val.*Link);
+			return true;
+		}
+
+		link_type** newpos = &root_, * parent = nullptr;
 		while (*newpos)
 		{
 			parent = *newpos;
@@ -214,7 +227,7 @@ public:
 
 	bool remove(T& val)
 	{
-		link_type** newpos = &root, * parent = nullptr, * node = nullptr;
+		link_type** newpos = &root_, * parent = nullptr, * node = nullptr;
 		while (*newpos)
 		{
 			parent = *newpos;
@@ -255,7 +268,7 @@ public:
 
 	iterator_type begin()
 	{
-		return iterator_type{ avl_first(&root) };
+		return iterator_type{ avl_first(&root_) };
 	}
 
 	iterator_type end()
@@ -339,7 +352,7 @@ private:
 
 		if (bf > 1 && l_bf > 0) // L
 		{
-			return avl_right_rotate(root);
+			return avl_left_rotate(root);
 		}
 		else if (bf > 1 && l_bf <= 0) // LR
 		{
@@ -353,7 +366,7 @@ private:
 		}
 		else if (bf < -1 && r_bf <= 0) //RR
 		{
-			return avl_left_rotate(root);
+			return avl_right_rotate(root);
 		}
 		else
 		{
@@ -480,7 +493,7 @@ private:
 
 private:
 	size_type size_{ 0 };
-	link_type root{ true };
+	link_type* root_{ nullptr };
 	TCmp cmp_{};
 };
 

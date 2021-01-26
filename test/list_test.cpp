@@ -7,24 +7,26 @@
 using namespace kbl;
 using namespace std;
 
-class test_class
+class list_test_class
 {
 public:
-	test_class() = default;
+	list_test_class() = default;
 
-	test_class(int v) : value(v)
+	list_test_class(int v) : value(v)
 	{
 	}
 
-	bool operator<(const test_class& rhs) const
+	bool operator<(const list_test_class& rhs) const
 	{
 		return value < rhs.value;
 	}
 
 	int value{ 0 };
 
-	list_link<test_class, std::mutex> link{ this };
-	using list_type = intrusive_list<test_class, std::mutex, &test_class::link, true, true>;
+	list_link<list_test_class, std::mutex> link{ this };
+	using list_type = intrusive_list<list_test_class, std::mutex, &list_test_class::link, true, true>;
+	using list_type_no_delete = intrusive_list<list_test_class, std::mutex, &list_test_class::link, true, false>;
+
 };
 
 class ListSingleTestFixture : public testing::Test
@@ -34,9 +36,11 @@ protected:
 	{
 		for (int i = 0; i <= 10; i++)
 		{
-			auto t = new test_class{ i };
+			auto t = new list_test_class{ i };
 			list.push_back(t);
 		}
+
+		one_element.push_back(new list_test_class{ 20011204 });
 	}
 
 	void TearDown() override
@@ -44,8 +48,9 @@ protected:
 		list.clear(true);
 	}
 
-	test_class::list_type list;
-	test_class::list_type empty_list;
+	list_test_class::list_type list;
+	list_test_class::list_type empty_list;
+	list_test_class::list_type_no_delete one_element;
 };
 
 class ListMultipleTestFixture : public testing::Test
@@ -55,13 +60,13 @@ protected:
 	{
 		for (int i = 0; i < 5; i++)
 		{
-			auto t = new test_class{ 2 * i + 1 };
+			auto t = new list_test_class{ 2 * i + 1 };
 			list1.push_back(t);
 		}
 
 		for (int i = 1; i <= 5; i++)
 		{
-			auto t = new test_class{ 2 * i };
+			auto t = new list_test_class{ 2 * i };
 			list2.push_back(t);
 		}
 	}
@@ -72,8 +77,8 @@ protected:
 		list2.clear(true);
 	}
 
-	test_class::list_type list1;
-	test_class::list_type list2;
+	list_test_class::list_type list1;
+	list_test_class::list_type list2;
 };
 
 TEST_F(ListSingleTestFixture, Size)
@@ -262,10 +267,25 @@ TEST_F(ListSingleTestFixture, Removal)
 	}
 }
 
+TEST_F(ListSingleTestFixture, DoubleRemoval)
+{
+	auto item = one_element.front_ptr();
+	one_element.remove(*item);
+	one_element.remove(*item);
+
+	EXPECT_EQ(item->link.next, &item->link);
+	EXPECT_EQ(item->link.prev, &item->link);
+
+	EXPECT_EQ(one_element.size(), 0);
+	EXPECT_EQ(one_element.size_slow(), 0);
+	EXPECT_EQ(one_element.empty(), true);
+
+}
+
 TEST_F(ListSingleTestFixture, Insert)
 {
-	list.push_front(new test_class{ 2001 });
-	list.push_back(new test_class{ 1204 });
+	list.push_front(new list_test_class{ 2001 });
+	list.push_back(new list_test_class{ 1204 });
 
 	EXPECT_EQ(list.size(), 13);
 	EXPECT_EQ(list.size_slow(), 13);
@@ -286,7 +306,7 @@ TEST_F(ListSingleTestFixture, FrontEnd)
 TEST_F(ListSingleTestFixture, STLFuncs)
 {
 	{
-//		auto iter = std::find_if(list.begin(), list.end(), [](const test_class& t)
+//		auto iter = std::find_if(list.begin(), list.end(), [](const list_test_class& t)
 //		{
 //			return t.value == 0;
 //		});
