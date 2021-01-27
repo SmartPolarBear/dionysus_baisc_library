@@ -31,12 +31,12 @@ public:
 public:
 	constexpr reversed_iterator() = default;
 
-	reversed_iterator(const reversed_iterator& another)
+	constexpr reversed_iterator(const reversed_iterator& another)
 			: iter_(another.iter_)
 	{
 	}
 
-	reversed_iterator& operator=(const reversed_iterator& another)
+	constexpr reversed_iterator& operator=(const reversed_iterator& another)
 	{
 		if (this == &another)return *this;
 
@@ -44,18 +44,18 @@ public:
 		return *this;
 	}
 
-	reversed_iterator(reversed_iterator&& another)
+	constexpr reversed_iterator(reversed_iterator&& another)
 			: iter_(another.iter_)
 	{
 	}
 
-	explicit reversed_iterator(const TIter& iter)
+	constexpr explicit reversed_iterator(const TIter& iter)
 			: iter_(iter)
 	{
 	}
 
 	template<typename ...Args>
-	explicit reversed_iterator(Args&& ...args)
+	constexpr explicit reversed_iterator(Args&& ...args)
 			:iter_(std::forward<Args>(args)...)
 	{
 	}

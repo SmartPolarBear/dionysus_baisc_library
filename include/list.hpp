@@ -1,5 +1,6 @@
 #pragma once
 
+#include "thread_annotations.hpp"
 #include "lock_guard.h"
 
 #include "utility.h"
@@ -91,28 +92,39 @@ public:
 	using dummy_type = int;
 
 public:
-	intrusive_list_iterator() = default;
+	constexpr intrusive_list_iterator() = default;
 
-	explicit intrusive_list_iterator(head_type* h) : h_(h)
+	constexpr explicit intrusive_list_iterator(head_type* h) : h_(h)
 	{
 	}
 
-	intrusive_list_iterator(intrusive_list_iterator&& another) noexcept
+	constexpr intrusive_list_iterator(intrusive_list_iterator&& another) noexcept
 	{
 		h_ = another.h_;
 		another.h_ = nullptr;
 	}
 
-	intrusive_list_iterator(const intrusive_list_iterator& another)
+	constexpr intrusive_list_iterator(const intrusive_list_iterator& another)
 	{
 		h_ = another.h_;
 	}
 
-	intrusive_list_iterator& operator=(const intrusive_list_iterator& another)
+	intrusive_list_iterator& operator=(const intrusive_list_iterator& another) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
-		if (this == &another)return *this;
+		if (this == &another)
+			return *this;
 
-		h_ = another.h_;
+		if constexpr(EnableLock)
+		{
+			lock_guard_type g{ lock };
+			h_ = another.h_;
+		}
+		else
+		{
+			h_ = another.h_;
+
+		}
+
 		return *this;
 	}
 
@@ -137,15 +149,33 @@ public:
 		return !(*this == other);
 	}
 
-	intrusive_list_iterator& operator++()
+	intrusive_list_iterator& operator++() TA_NO_THREAD_SAFETY_ANALYSIS
 	{
-		h_ = h_->next;
+		if constexpr (EnableLock)
+		{
+			lock_guard_type g{ lock };
+			h_ = h_->next;
+		}
+		else
+		{
+			h_ = h_->next;
+		}
+
 		return *this;
 	}
 
-	intrusive_list_iterator& operator--()
+	intrusive_list_iterator& operator--() TA_NO_THREAD_SAFETY_ANALYSIS
 	{
-		h_ = h_->prev;
+		if constexpr (EnableLock)
+		{
+			lock_guard_type g{ lock };
+			h_ = h_->prev;
+		}
+		else
+		{
+			h_ = h_->prev;
+		}
+
 		return *this;
 	}
 
@@ -164,6 +194,8 @@ public:
 	}
 
 private:
+	using lock_guard_type = ktl::mutex::lock_guard<TMutex>;
+
 	head_type* h_;
 	mutable mutex_type lock;
 };
@@ -202,10 +234,9 @@ public:
 	using riterator_type = kbl::reversed_iterator<iterator_type>;
 	using const_iterator_type = const iterator_type;
 
-	using lock_guard_type = ktl::mutex::lock_guard<TMutex>;
 public:
 	/// New empty list
-	constexpr intrusive_list()
+	constexpr intrusive_list() TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -224,7 +255,7 @@ public:
 	intrusive_list& operator=(const intrusive_list&) = delete;
 
 	/// Move constructor
-	intrusive_list(intrusive_list&& another) noexcept
+	intrusive_list(intrusive_list&& another) noexcept TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -315,7 +346,7 @@ public:
 		return riterator_type{ &head_ };
 	}
 
-	void insert(const_iterator_type iter, T* item)
+	void insert(const_iterator_type iter, T* item) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -345,7 +376,7 @@ public:
 		insert(iter.get_iterator(), item);
 	}
 
-	void erase(iterator_type it, bool call_delete = CallDeleteOnRemoval)
+	void erase(iterator_type it, bool call_delete = CallDeleteOnRemoval) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if (list_empty(&head_))return;
 
@@ -372,7 +403,7 @@ public:
 
 	/// Remove item by value. **it takes constant time**
 	/// \param val
-	void remove(T* val, bool call_delete = CallDeleteOnRemoval)
+	void remove(T* val, bool call_delete = CallDeleteOnRemoval) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if (list_empty(&head_))return;
 
@@ -399,7 +430,7 @@ public:
 	}
 
 
-	void pop_back(bool call_delete = CallDeleteOnRemoval)
+	void pop_back(bool call_delete = CallDeleteOnRemoval) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if (list_empty(&head_))return;
 
@@ -423,7 +454,7 @@ public:
 
 	}
 
-	void push_back(T* item)
+	void push_back(T* item) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -445,7 +476,7 @@ public:
 	}
 
 
-	void pop_front(bool call_delete = CallDeleteOnRemoval)
+	void pop_front(bool call_delete = CallDeleteOnRemoval) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if (list_empty(&head_))return;
 
@@ -469,7 +500,7 @@ public:
 
 	}
 
-	void push_front(T* item)
+	void push_front(T* item) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -491,7 +522,7 @@ public:
 	}
 
 
-	void clear(bool call_delete = CallDeleteOnRemoval)
+	void clear(bool call_delete = CallDeleteOnRemoval) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -506,7 +537,7 @@ public:
 
 	/// swap this and another
 	/// \param another
-	void swap(container_type& another) noexcept
+	void swap(container_type& another) noexcept TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -543,7 +574,7 @@ public:
 	/// \param another
 	/// \param cmp
 	template<typename Compare>
-	void merge(container_type& another, Compare cmp)
+	void merge(container_type& another, Compare cmp) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -560,7 +591,7 @@ public:
 
 	/// join two lists
 	/// \param other
-	void splice(intrusive_list& other)
+	void splice(intrusive_list& other) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -585,7 +616,7 @@ public:
 	/// Join two lists, insert other 's item after the pos
 	/// \param pos insert after it
 	/// \param other
-	void splice(const_iterator_type pos, intrusive_list& other)
+	void splice(const_iterator_type pos, intrusive_list& other) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -620,7 +651,7 @@ public:
 		return size_;
 	}
 
-	[[nodiscard]] size_type size_slow() const
+	[[nodiscard]] size_type size_slow() const TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -761,7 +792,7 @@ private:
 
 	// initialize the list
 	template<bool LockHeld = false>
-	static inline void list_init(head_type* head)
+	static inline void list_init(head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -776,7 +807,7 @@ private:
 
 // add the new node after the specified head_
 	template<bool LockHeld = false>
-	static inline void list_add(head_type* newnode, head_type* head)
+	static inline void list_add(head_type* newnode, head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -793,7 +824,7 @@ private:
 
 // add the new node before the specified head_
 	template<bool LockHeld = false>
-	static inline void list_add_tail(head_type* newnode, head_type* head)
+	static inline void list_add_tail(head_type* newnode, head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -812,7 +843,7 @@ private:
 
 // delete the entry
 	template<bool LockHeld = false>
-	static inline void list_remove(head_type* entry)
+	static inline void list_remove(head_type* entry) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -833,7 +864,7 @@ private:
 	}
 
 	template<bool LockHeld = false>
-	static inline void list_remove_init(head_type* entry)
+	static inline void list_remove_init(head_type* entry) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -859,7 +890,7 @@ private:
 
 // replace the old entry with newnode
 	template<bool LockHeld = false>
-	static inline void list_replace(head_type* old, head_type* newnode)
+	static inline void list_replace(head_type* old, head_type* newnode) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -879,7 +910,7 @@ private:
 	}
 
 	template<bool LockHeld = false>
-	static inline bool list_empty(const head_type* head)
+	static inline bool list_empty(const head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -894,7 +925,7 @@ private:
 	}
 
 	template<bool LockHeld = false>
-	static inline void list_swap(head_type* e1, head_type* e2)
+	static inline void list_swap(head_type* e1, head_type* e2) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
@@ -930,7 +961,7 @@ private:
 	/// \tparam TParent
 	/// \param list	the new list to add
 	/// \param head the place to add it in the list
-	static inline void list_splice(head_type* list, head_type* head)
+	static inline void list_splice(head_type* list, head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -954,7 +985,7 @@ private:
 	/// \tparam TParent
 	/// \param list	the new list to add
 	/// \param head the place to add it in the list
-	static inline void list_splice_init(head_type* list, head_type* head)
+	static inline void list_splice_init(head_type* list, head_type* head) TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -977,8 +1008,10 @@ private:
 		}
 	}
 
+	using lock_guard_type = ktl::mutex::lock_guard<TMutex>;
 
-	head_type head_{ nullptr };
+	head_type head_   TA_GUARDED(lock) { nullptr };
+	
 	size_type size_{ 0 };
 
 	mutable mutex_type lock;
