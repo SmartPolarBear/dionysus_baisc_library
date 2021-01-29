@@ -28,7 +28,7 @@ skip_list.h              |❎                 |
 Feature                  |Finished ?  |Description             | Notes 
 -------------------------|:----------:|:-----------------------|-----------------
 ``` kbl::reversed_iterator```   |⭕           |Universal interface for reversed_range iterators|Only complete for sequential access iterator
-
+```kbl::reversed_range```|✅| reverse container adapter with pipe-like operators supported|
 ## License
 Copyright (c) 2021 SmartPolarBear
 
