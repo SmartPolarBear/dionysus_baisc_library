@@ -183,6 +183,7 @@ public:
 	using ssize_type = int64_t;
 	using link_type = avl_tree_link<T, Key>;
 	using iterator_type = avl_tree_iterator<T, Key, Link, TCmp, false, EnableLock>;
+	using riterator_type = kbl::reversed_iterator<iterator_type>;
 
 	template<typename S, auto S::*K,
 			avl_tree_link<S, K> S::*L,

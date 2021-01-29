@@ -27,7 +27,7 @@ skip_list.h              |❎                 |
 #### utility.h
 Feature                  |Finished ?  |Description             | Notes 
 -------------------------|:----------:|:-----------------------|-----------------
-``` kbl::reversed_iterator```   |⭕           |Universal interface for reversed iterators|Only complete for sequential access iterator
+``` kbl::reversed_iterator```   |⭕           |Universal interface for reversed_range iterators|Only complete for sequential access iterator
 
 ## License
 Copyright (c) 2021 SmartPolarBear
