@@ -185,7 +185,7 @@ static inline reversed_range<const T> reverse(const T& cont)
 
 namespace
 {
-const reversed_forwarder reversed{};
+constexpr reversed_forwarder reversed{};
 }
 
 }
