@@ -230,22 +230,18 @@ public:
 
 	bool remove(T& val)
 	{
-		link_type** newpos = &root_, * parent = nullptr, * node = nullptr;
-		while (*newpos)
+		link_type* node = root_;
+		auto cmp_val = cmp_(val.*Key, node->owner->*Key);
+
+		while (node && cmp_val != 0)
 		{
-			parent = *newpos;
-			auto cmp_val = cmp_(val->*Key, (*newpos)->owner->*Key);
 			if (cmp_val < 0)
 			{
-				newpos = &((*newpos)->left);
-			}
-			else if (cmp_val == 0)
-			{
-				node = *newpos;
+				node = node->left;
 			}
 			else
 			{
-				newpos = &((*newpos)->right);
+				node = node->right;
 			}
 		}
 
@@ -424,6 +420,7 @@ private:
 		}
 
 		avl_update_height(node->parent);
+
 		avl_rebalance(node->parent);
 
 		node->parent = nullptr;

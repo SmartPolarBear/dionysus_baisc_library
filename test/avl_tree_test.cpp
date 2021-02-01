@@ -39,6 +39,9 @@ protected:
 			auto t = new avl_test_class{ a[i] };
 			tree.insert(*t);
 		}
+
+		item2 = new avl_test_class(2);
+		item114514 = new avl_test_class(114514);
 	}
 
 	void TearDown() override
@@ -48,6 +51,8 @@ protected:
 
 	avl_test_class::tree_type tree;
 	avl_test_class::tree_type empty_tree;
+
+	avl_test_class* item2, * item114514;
 };
 
 TEST_F(AVLTreeSingleTestFixture, Size)
@@ -57,4 +62,22 @@ TEST_F(AVLTreeSingleTestFixture, Size)
 
 	EXPECT_EQ(tree.empty(), false);
 	EXPECT_EQ(empty_tree.empty(), true);
+}
+
+TEST_F(AVLTreeSingleTestFixture, Insert)
+{
+	EXPECT_EQ(tree.insert(*item2), false);
+	EXPECT_EQ(tree.insert(*item114514), true);
+
+	EXPECT_EQ(tree.size(), 12);
+}
+
+TEST_F(AVLTreeSingleTestFixture, Removal)
+{
+	EXPECT_EQ(tree.remove(*item2), true);
+	EXPECT_EQ(tree.remove(*item2), false);
+	EXPECT_EQ(tree.remove(*item114514), true);
+	EXPECT_EQ(tree.remove(*item114514), false);
+
+	EXPECT_EQ(tree.size(), 11);
 }
