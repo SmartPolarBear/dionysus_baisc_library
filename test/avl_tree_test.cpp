@@ -33,7 +33,7 @@ class AVLTreeSingleTestFixture : public testing::Test
 protected:
 	void SetUp() override
 	{
-		int a[11] = { 2, 0, 1, 1, 2, 4, 20, 2001, 200, 120, 42 };
+		int a[11] = { 2, 0, 1, 3, 9, 4, 20, 2001, 200, 120, 42 };
 		for (int i = 0; i <= 10; i++)
 		{
 			auto t = new avl_test_class{ a[i] };

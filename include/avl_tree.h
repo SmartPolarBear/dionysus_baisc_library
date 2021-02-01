@@ -198,6 +198,8 @@ public:
 		if (root_ == nullptr)
 		{
 			root_ = &(val.*Link);
+			++size_;
+
 			return true;
 		}
 
@@ -253,6 +255,7 @@ public:
 		}
 
 		avl_remove(node);
+
 		--size_;
 		return true;
 	}
@@ -278,38 +281,31 @@ public:
 	}
 
 private:
-	static inline link_type* avl_left_rotate(link_type* node)
+	static inline link_type* avl_left_rotate(link_type* root)
 	{
-		auto right = node->right;
-		auto tr = right->left;
+		auto left = root->left;
 
-		right->left = node;
-		node->parent = right->left;
+		root->left = left->right;
+		left->right = root;
 
-		node->right = tr;
-		tr->parent = node->right;
-
-		avl_update_height(node);
-		avl_update_height(right);
-
-		return right;
-	}
-
-	static inline link_type* avl_right_rotate(link_type* node)
-	{
-		auto left = node->left;
-		auto tr = left->right;
-
-		left->right = node;
-		node->parent = left->right;
-
-		node->left = tr;
-		tr->parent = node->left;
-
-		avl_update_height(node);
 		avl_update_height(left);
+		avl_update_height(root);
 
 		return left;
+	}
+
+	static inline link_type* avl_right_rotate(link_type* root)
+	{
+		auto right = root->right;
+
+		root->right = right->left;
+		right->left = root;
+
+		avl_update_height(right);
+		avl_update_height(root);
+
+		return right;
+
 	}
 
 	static inline size_type avl_tree_height(link_type* root)
@@ -329,7 +325,7 @@ private:
 			return 0;
 		}
 
-		return avl_tree_height(root->right) - avl_tree_height(root->left);
+		return avl_tree_height(root->left) - avl_tree_height(root->right);
 	}
 
 	static inline link_type* avl_rebalance(link_type* root)
@@ -357,13 +353,13 @@ private:
 		}
 		else if (bf > 1 && l_bf <= 0) // LR
 		{
-			root->left = avl_left_rotate(root->left);
-			return avl_right_rotate(root);
+			root->left = avl_right_rotate(root->left);
+			return avl_left_rotate(root);
 		}
 		else if (bf < -1 && r_bf > 0) // RL
 		{
-			root->right = avl_right_rotate(root->right);
-			return avl_left_rotate(root);
+			root->right = avl_left_rotate(root->right);
+			return avl_right_rotate(root);
 		}
 		else if (bf < -1 && r_bf <= 0) //RR
 		{
