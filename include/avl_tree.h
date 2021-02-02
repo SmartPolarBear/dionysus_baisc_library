@@ -343,13 +343,13 @@ private:
 		if (root->left == nullptr && root->right == nullptr)
 		{
 			root = nullptr;
-			size_--;
+			--size_;
 		}
 		else if (root->left == nullptr || root->right == nullptr)
 		{
 			auto newroot = root->left ? root->left : root->right;
 			root = newroot;
-			size_--;
+			--size_;
 		}
 		else
 		{

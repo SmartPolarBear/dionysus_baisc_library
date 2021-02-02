@@ -75,9 +75,9 @@ TEST_F(AVLTreeSingleTestFixture, Insert)
 TEST_F(AVLTreeSingleTestFixture, Removal)
 {
 	tree.remove(*item2);
-	EXPECT_EQ(tree.size(), 11);
+	EXPECT_EQ(tree.size(), 10);
 
-	tree.remove(*item114514);
+	tree.remove(*item114514); // not exist
 	EXPECT_EQ(tree.size(), 10);
 
 }
