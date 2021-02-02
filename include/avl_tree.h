@@ -32,18 +32,21 @@ struct avl_default_deleter
 	}
 };
 
-template<typename TParent, auto TParent::*Key>
+template<typename TOwner, auto TOwner::*Key>
 struct avl_tree_link
 {
-	TParent* owner;
+	TOwner* owner{ nullptr };
 
-	size_t height;
+	size_t height{ 1 };
 
-	avl_tree_link* left, * right, * parent;
+	bool sentinel{ false };
+
+	avl_tree_link* left{ nullptr }, * right{ nullptr }, * parent{ nullptr };
 
 	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
 			  height(1),
+			  sentinel(false),
 			  left(nullptr),
 			  right(nullptr),
 			  parent(nullptr)
@@ -51,9 +54,22 @@ struct avl_tree_link
 
 	}
 
-	[[nodiscard]] explicit avl_tree_link(TParent* on)
-			: owner(on),
+	[[nodiscard]] explicit avl_tree_link(TOwner* own)
+			: owner(own),
 			  height(1),
+			  sentinel(false),
+			  left(nullptr),
+			  right(nullptr),
+			  parent(nullptr)
+	{
+
+	}
+
+
+	[[nodiscard]] explicit avl_tree_link(bool is_sentinel)
+			: owner(nullptr),
+			  height(1),
+			  sentinel(is_sentinel),
 			  left(nullptr),
 			  right(nullptr),
 			  parent(nullptr)
@@ -239,7 +255,7 @@ public:
 
 	iterator_type end()
 	{
-		return iterator_type{ nullptr };
+		return iterator_type{ &sentinel_ };
 	}
 
 private:
@@ -348,7 +364,7 @@ private:
 			return root;
 
 		auto left = root->left;
-		while (left->left)
+		while (left->left && !left->left->sentinel)
 			left = left->left;
 
 		return left;
@@ -361,15 +377,17 @@ private:
 			return root;
 
 		auto right = root->right;
-		while (right->right)
+		while (right->right && !right->right->sentinel)
 			right = right->right;
 
 		return right;
 	}
 
-	inline auto compare(link_type* n1, link_type* n2)
+	inline std::strong_ordering compare(link_type* n1, link_type* n2)
 	{
-		return cmp_(key_of(n1), key_of(n2));
+		if (n1->sentinel)return std::strong_ordering::greater;
+		else if (n2->sentinel)return std::strong_ordering::less;
+		else return cmp_(key_of(n1), key_of(n2));
 	}
 
 	link_type* insert(link_type* newnode, link_type* root)
@@ -520,6 +538,8 @@ private:
 	link_type* root_{ nullptr };
 	TCmp cmp_{};
 	TDeleter deleter_{};
+
+	link_type sentinel_{ true };
 };
 
 }
