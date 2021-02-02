@@ -66,18 +66,18 @@ TEST_F(AVLTreeSingleTestFixture, Size)
 
 TEST_F(AVLTreeSingleTestFixture, Insert)
 {
-	EXPECT_EQ(tree.insert(*item2), false);
-	EXPECT_EQ(tree.insert(*item114514), true);
+	tree.insert(*item2);
+	tree.insert(*item114514);
 
 	EXPECT_EQ(tree.size(), 12);
 }
 
 TEST_F(AVLTreeSingleTestFixture, Removal)
 {
-	EXPECT_EQ(tree.remove(*item2), true);
-	EXPECT_EQ(tree.remove(*item2), false);
-	EXPECT_EQ(tree.remove(*item114514), true);
-	EXPECT_EQ(tree.remove(*item114514), false);
-
+	tree.remove(*item2);
 	EXPECT_EQ(tree.size(), 11);
+
+	tree.remove(*item114514);
+	EXPECT_EQ(tree.size(), 10);
+
 }

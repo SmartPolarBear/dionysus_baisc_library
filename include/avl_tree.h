@@ -193,67 +193,14 @@ public:
 	friend
 	class avl_tree_iterator;
 
-	bool insert(T& val)
+	void insert(T& val)
 	{
-		if (root_ == nullptr)
-		{
-			root_ = &(val.*Link);
-			++size_;
-
-			return true;
-		}
-
-		link_type** newpos = &root_, * parent = nullptr;
-		while (*newpos)
-		{
-			parent = *newpos;
-			auto cmp_val = cmp_(val.*Key, (*newpos)->owner->*Key);
-			if (cmp_val < 0)
-			{
-				newpos = &((*newpos)->left);
-			}
-			else if (cmp_val == 0)
-			{
-				return false;
-			}
-			else
-			{
-				newpos = &((*newpos)->right);
-			}
-		}
-
-		avl_insert(&(val.*Link), parent, newpos);
-
-		++size_;
-		return true;
+		root_ = insert(&(val.*Link), root_);
 	}
 
-	bool remove(T& val)
+	void remove(T& val)
 	{
-		link_type* node = root_;
-		auto cmp_val = cmp_(val.*Key, node->owner->*Key);
-
-		while (node && cmp_val != 0)
-		{
-			if (cmp_val < 0)
-			{
-				node = node->left;
-			}
-			else
-			{
-				node = node->right;
-			}
-		}
-
-		if (node == nullptr)
-		{
-			return false;
-		}
-
-		avl_remove(node);
-
-		--size_;
-		return true;
+		root_ = remove(&(val.*Link), root_);
 	}
 
 	[[nodiscard]] size_type size() const
@@ -277,213 +224,206 @@ public:
 	}
 
 private:
-	static inline link_type* avl_left_rotate(link_type* root)
+	static inline constexpr size_type height_of(link_type* node)
 	{
-		auto left = root->left;
-
-		root->left = left->right;
-		left->right = root;
-
-		avl_update_height(left);
-		avl_update_height(root);
-
-		return left;
+		return node == nullptr ? 0 : node->height;
 	}
 
-	static inline link_type* avl_right_rotate(link_type* root)
+	static inline constexpr TKey& key_of(link_type* node)
+	{
+		return node->owner->*Key;
+	}
+
+	static inline void update_height(link_type* node)
+	{
+		node->height = std::max(height_of(node->left), height_of(node->right)) + 1;
+	}
+
+	static inline constexpr int64_t balance_factor(link_type* node)
+	{
+		return height_of(node->left) - height_of(node->right);
+	}
+
+	static inline link_type* left_rotate(link_type* root)
 	{
 		auto right = root->right;
 
 		root->right = right->left;
 		right->left = root;
 
-		avl_update_height(right);
-		avl_update_height(root);
+		update_height(right);
+		update_height(root);
 
 		return right;
-
 	}
 
-	static inline size_type avl_tree_height(link_type* root)
+	static inline link_type* right_rotate(link_type* root)
 	{
-		return root == nullptr ? 0 : root->height;
-	}
-
-	static inline void avl_update_height(link_type* node)
-	{
-		node->height = std::max(avl_tree_height(node->left), avl_tree_height(node->right)) + 1;
-	}
-
-	static inline ssize_type avl_balance_factor(link_type* root)
-	{
-		if (root == nullptr)
-		{
-			return 0;
-		}
-
-		return avl_tree_height(root->left) - avl_tree_height(root->right);
-	}
-
-	static inline link_type* avl_rebalance(link_type* root)
-	{
-		// find the minimum unbalanced subtree
-		auto old_root = root;
-		auto bf = avl_balance_factor(root);
-		while (root && bf >= -1 && bf <= 1)
-		{
-			root = root->parent;
-			bf = avl_balance_factor(root);
-		}
-
-		if (!root) // no need to rebalance
-		{
-			return old_root;
-		}
-
-		auto l_bf = avl_balance_factor(root->left);
-		auto r_bf = avl_balance_factor(root->right);
-
-		if (bf > 1 && l_bf > 0) // L
-		{
-			return avl_left_rotate(root);
-		}
-		else if (bf > 1 && l_bf <= 0) // LR
-		{
-			root->left = avl_right_rotate(root->left);
-			return avl_left_rotate(root);
-		}
-		else if (bf < -1 && r_bf > 0) // RL
-		{
-			root->right = avl_left_rotate(root->right);
-			return avl_right_rotate(root);
-		}
-		else if (bf < -1 && r_bf <= 0) //RR
-		{
-			return avl_right_rotate(root);
-		}
-		else
-		{
-			// should not reach here
-			return nullptr;
-		}
-	}
-
-	static inline void avl_insert(link_type* newnode, link_type* parent, link_type** newpos)
-	{
-		if (newnode->parent != nullptr)
-			return;
-
-		newnode->parent = parent;
-		*newpos = newnode;
-
-		avl_update_height(parent);
-		avl_rebalance(parent);
-	}
-
-	static inline void avl_remove(link_type* node)
-	{
-		if (node->parent == nullptr)
-			return;
-
-		link_type** victim = node->parent->left == node ? &node->parent->left : &node->parent->right;
-
-		if (node->left == nullptr && node->right == nullptr)// node is a leave
-		{
-			*victim = nullptr;
-		}
-		else if (node->left == nullptr && node->right != nullptr)
-		{
-			node->right->parent = node->parent;
-			*victim = node->right;
-		}
-		else if (node->left != nullptr && node->right == nullptr)
-		{
-			node->left->parent = node->parent;
-			*victim = node->left;
-		}
-		else
-		{
-			link_type* left_max = node->left;
-			while (left_max->right)
-				left_max = left_max->right;
-
-			avl_remove(left_max); // it's a must that we delete a leaf node
-
-			left_max->right = node->right;
-			left_max->left = node->left;
-			left_max->parent = node->parent;
-
-			*victim = left_max;
-
-			avl_update_height(left_max);
-			avl_rebalance(left_max);
-		}
-
-		avl_update_height(node->parent);
-
-		avl_rebalance(node->parent);
-
-		node->parent = nullptr;
-
-		node->height = 1;
-	}
-
-	static inline link_type* avl_first(link_type* root)
-	{
-		if (root->left == nullptr)
-			return root;
-
 		auto left = root->left;
-		while (left->left)
-			left = left->left;
+
+		root->left = left->right;
+		left->right = root;
+
+		update_height(root);
+		update_height(left);
 
 		return left;
 	}
 
-	static inline link_type* avl_last(link_type* root)
+	static inline link_type* min_node(link_type* root)
 	{
-		if (root->right == nullptr)
+		while (root->left)
+			root = root->left;
+
+		return root;
+	}
+
+	static inline link_type* max_node(link_type* root)
+	{
+		while (root->right)
+			root = root->right;
+
+		return root;
+	}
+
+	inline auto compare(link_type* n1, link_type* n2)
+	{
+		return cmp_(key_of(n1), key_of(n2));
+	}
+
+	link_type* insert(link_type* newnode, link_type* root)
+	{
+		if (root == nullptr)
+		{
+			++size_;
+			return newnode;
+		}
+
+		auto cmp_val = compare(newnode, root);// cmp_(newnode->owner->*Key, root->owner->*Key);
+		if (cmp_val < 0)
+		{
+			root->left = insert(newnode, root->left);
+		}
+		else if (cmp_val > 0)
+		{
+			root->right = insert(newnode, root->right);
+		}
+		else
+		{
 			return root;
-
-		auto right = root->right;
-		while (right->right)
-			right = right->right;
-
-		return right;
-	}
-
-	static inline link_type* avl_next(link_type* node)
-	{
-		if (node->parent == nullptr)return nullptr;
-
-		if (node->right)
-		{
-			return avl_first(node->right);
 		}
 
-		link_type* parent = nullptr;
-		while ((parent = node->parent) && node == parent->right)
-			node = parent;
+		update_height(root);
 
-		return parent;
-	}
-
-	static inline link_type* avl_prev(link_type* node)
-	{
-		if (node->parent == nullptr)return nullptr;
-
-		if (node->left)
+		auto bf = balance_factor(root);
+		if (bf > 1 && /*cmp_(newnode->owner->*Key, root->left->owner->*Key)*/compare(newnode, root->left) > 0)
 		{
-			return avl_last(node->left);
+			root->left = left_rotate(root->left);
+			return right_rotate(root);
+		}
+		else if (bf > 1 && /*cmp_(newnode->owner->*Key, root->left->owner->*Key)*/compare(newnode, root->left) < 0)
+		{
+			return right_rotate(root);
+		}
+		else if (bf < -1 && /*cmp_(newnode->owner->*Key, root->right->owner->*Key)*/compare(newnode, root->right) > 0)
+		{
+			return left_rotate(root);
+		}
+		else if (bf < -1 && /*cmp_(newnode->owner->*Key, root->right->owner->*Key)*/ compare(newnode, root->right) < 0)
+		{
+			root->right = right_rotate(root->right);
+			return left_rotate(root);
 		}
 
-		link_type* parent = nullptr;
-		while ((parent = node->parent) && node == parent->left)
-			node = parent;
-
-		return parent;
+		return root;
 	}
 
+	link_type* do_remove(link_type* node, link_type* root)
+	{
+		if (root->left == nullptr && root->right == nullptr)
+		{
+			root = nullptr;
+			size_--;
+		}
+		else if (root->left == nullptr || root->right == nullptr)
+		{
+			auto newroot = root->left ? root->left : root->right;
+			root = newroot;
+			size_--;
+		}
+		else
+		{
+			auto newroot = min_node(root->right);
+
+			root->right = remove(root->right, newroot);
+
+			newroot->left = root->left;
+			newroot->right = root->right;
+
+			root = newroot;
+		}
+
+		return root;
+	}
+
+	link_type* remove(link_type* node, link_type* root)
+	{
+		if (root == nullptr)
+		{
+			return root; // do not exist
+		}
+
+
+		if (auto cmp_val = compare(node, root);cmp_val < 0)
+		{
+			root->left = remove(node, root->left);
+		}
+		else if (cmp_val > 0)
+		{
+			root->right = remove(node, root->right);
+		}
+		else
+		{
+			root = do_remove(node, root);
+		}
+
+		if (root == nullptr)
+		{
+			return root;
+		}
+
+		update_height(root);
+
+		auto bf = balance_factor(root);
+
+		// Left Left Case
+		if (bf > 1 && balance_factor(root->left) >= 0)
+		{
+			return right_rotate(root);
+		}
+
+		// Left Right Case
+		if (bf > 1 && balance_factor(root->left) < 0)
+		{
+			root->left = left_rotate(root->left);
+			return right_rotate(root);
+		}
+
+		// Right Right Case
+		if (bf < -1 && balance_factor(root->right) <= 0)
+		{
+			return left_rotate(root);
+		}
+
+		// Right Left Case
+		if (bf < -1 && balance_factor(root->right) > 0)
+		{
+			root->right = right_rotate(root->right);
+			return left_rotate(root);
+		}
+
+		return root;
+	}
 
 private:
 	size_type size_{ 0 };
