@@ -81,3 +81,11 @@ TEST_F(AVLTreeSingleTestFixture, Removal)
 	EXPECT_EQ(tree.size(), 10);
 
 }
+
+TEST_F(AVLTreeSingleTestFixture, Clear)
+{
+	tree.clear();
+
+	EXPECT_EQ(tree.size(), 0);
+	EXPECT_EQ(tree.empty(), true);
+}

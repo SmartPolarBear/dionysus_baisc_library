@@ -14,14 +14,13 @@ struct avl_tree_link
 
 	size_t height;
 
-	avl_tree_link* left, * right, * parent;
+	avl_tree_link* left, * right;
 
 	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
 			  height(1),
 			  left(nullptr),
-			  right(nullptr),
-			  parent(nullptr)
+			  right(nullptr)
 	{
 
 	}
@@ -30,8 +29,7 @@ struct avl_tree_link
 			: owner(on),
 			  height(1),
 			  left(nullptr),
-			  right(nullptr),
-			  parent(nullptr)
+			  right(nullptr)
 	{
 
 	}
@@ -203,6 +201,14 @@ public:
 		root_ = remove(&(val.*Link), root_);
 	}
 
+	void clear()
+	{
+		for (link_type* victim = max_node(root_); victim; victim = max_node(root_))
+		{
+			root_ = remove(victim, root_);
+		}
+	}
+
 	[[nodiscard]] size_type size() const
 	{
 		return size_;
@@ -272,6 +278,8 @@ private:
 
 	static inline link_type* min_node(link_type* root)
 	{
+		if (!root)return root;
+
 		while (root->left)
 			root = root->left;
 
@@ -280,6 +288,8 @@ private:
 
 	static inline link_type* max_node(link_type* root)
 	{
+		if (!root)return root;
+
 		while (root->right)
 			root = root->right;
 
