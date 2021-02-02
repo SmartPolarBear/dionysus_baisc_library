@@ -16,9 +16,9 @@ public:
 	{
 	}
 
-	bool operator<(const avl_test_class& rhs) const
+	auto operator<=>(const avl_test_class& rhs) const
 	{
-		return value < rhs.value;
+		return value <=> rhs.value;
 	}
 
 	int value{ 0 };
@@ -33,11 +33,13 @@ class AVLTreeSingleTestFixture : public testing::Test
 protected:
 	void SetUp() override
 	{
-		int a[11] = { 2, 0, 1, 3, 9, 4, 20, 2001, 200, 120, 42 };
+		std::copy(begin(src), end(src), begin(sorted_src));
+		std::sort(begin(sorted_src), end(sorted_src));
+
 		for (int i = 0; i <= 10; i++)
 		{
-			auto t = new avl_test_class{ a[i] };
-			tree.insert(*t);
+			auto t = new avl_test_class{ src[i] };
+			tree.insert(t);
 		}
 
 		item2 = new avl_test_class(2);
@@ -46,8 +48,16 @@ protected:
 
 	void TearDown() override
 	{
-//		tree.clear(true);
+		tree.clear();
 	}
+
+
+	int src[11] = { 2, 0, 1, 3, 9, 4, 20, 2001, 200, 120, 42 };
+
+	int sorted_src[11] = {};
+
+	static constexpr auto SRC_SIZE = sizeof(src) / sizeof(src[0]);
+
 
 	avl_test_class::tree_type tree;
 	avl_test_class::tree_type empty_tree;
@@ -66,18 +76,18 @@ TEST_F(AVLTreeSingleTestFixture, Size)
 
 TEST_F(AVLTreeSingleTestFixture, Insert)
 {
-	tree.insert(*item2);
-	tree.insert(*item114514);
+	tree.insert(item2);
+	tree.insert(item114514);
 
 	EXPECT_EQ(tree.size(), 12);
 }
 
 TEST_F(AVLTreeSingleTestFixture, Removal)
 {
-	tree.remove(*item2);
+	tree.remove(item2);
 	EXPECT_EQ(tree.size(), 10);
 
-	tree.remove(*item114514); // not exist
+	tree.remove(item114514); // not exist
 	EXPECT_EQ(tree.size(), 10);
 
 }
@@ -88,4 +98,17 @@ TEST_F(AVLTreeSingleTestFixture, Clear)
 
 	EXPECT_EQ(tree.size(), 0);
 	EXPECT_EQ(tree.empty(), true);
+}
+
+TEST_F(AVLTreeSingleTestFixture, SquentialTraversal)
+{
+	for (auto& item:tree)
+	{
+
+	}
+}
+
+TEST_F(AVLTreeSingleTestFixture, SquentialTraversalWithIterators)
+{
+
 }

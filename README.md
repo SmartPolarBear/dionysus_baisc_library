@@ -16,7 +16,7 @@ For the sake of performance and the requirement of kernel development, all the c
 
 Feature                  |Finished ?         |Notes
 -------------------------|:-----------------:|-----------------
-list.h                   |✅                 | Complete lock facility
+list.h                   |✅                 | Complete lock facility. Lockless interfaces are in plan.
 avl_tree.h               |⭕                 |
 hash_table.h             |❎                 |
 priority_queue.h         |❎                 |

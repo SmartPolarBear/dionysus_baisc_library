@@ -7,6 +7,31 @@
 namespace kbl
 {
 
+template<typename T>
+concept AVLTreeKey=
+requires(T a, T b)
+{
+	a <=> b;
+};
+
+template<AVLTreeKey T>
+struct avl_default_comparer
+{
+	auto operator()(const T& a, const T& b)
+	{
+		return a <=> b;
+	}
+};
+
+template<typename T>
+struct avl_default_deleter
+{
+	void operator()(T* ptr)
+	{
+		delete ptr;
+	}
+};
+
 template<typename TParent, auto TParent::*Key>
 struct avl_tree_link
 {
@@ -14,13 +39,14 @@ struct avl_tree_link
 
 	size_t height;
 
-	avl_tree_link* left, * right;
+	avl_tree_link* left, * right, * parent;
 
 	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
 			  height(1),
 			  left(nullptr),
-			  right(nullptr)
+			  right(nullptr),
+			  parent(nullptr)
 	{
 
 	}
@@ -29,35 +55,37 @@ struct avl_tree_link
 			: owner(on),
 			  height(1),
 			  left(nullptr),
-			  right(nullptr)
+			  right(nullptr),
+			  parent(nullptr)
 	{
 
 	}
 };
 
-template<typename T, auto T::*Key,
-		avl_tree_link<T, Key> T::*Link,
-		typename TCmp = less<T>,
-		bool Reverse = false,
+template<typename T,
+		typename TContainer,
 		bool EnableLock = false>
 class avl_tree_iterator
 {
 public:
 
-	template<typename S, auto S::*K,
-			avl_tree_link<S, Key> S::*L,
-			typename,
-			bool>
+	template<typename S, AVLTreeKey SK,
+			SK S::*K,
+			avl_tree_link<S, K> T::*L,
+			bool LK = false,
+			bool D = false,
+			typename TC=avl_default_comparer<S>,
+			typename TD=avl_default_deleter<S>>
 	class avl_tree;
 
 	using value_type = T;
 	using size_type = size_t;
 	using ssize_type = int64_t;
-	using key_type = decltype(*Key);
-	using link_type = avl_tree_link<T, Key>;
-	using container_type = avl_tree<T, Key, Link, TCmp, EnableLock>;
+	using container_type = TContainer;
+	using link_type = typename container_type::link_type;
 
 	using dummy_type = int;
+
 
 public:
 	avl_tree_iterator() = default;
@@ -95,7 +123,7 @@ public:
 
 	T* operator->()
 	{
-		return h_->parent;
+		return h_->parent->owner;
 	}
 
 	bool operator==(avl_tree_iterator const& other) const
@@ -110,14 +138,7 @@ public:
 
 	avl_tree_iterator& operator++()
 	{
-		if constexpr (Reverse)
-		{
-			container_type::avl_prev(h_);
-		}
-		else
-		{
-			container_type::avl_next(h_);
-		}
+		container_type::next_of(h_);
 		return *this;
 	}
 
@@ -130,14 +151,8 @@ public:
 
 	avl_tree_iterator& operator--()
 	{
-		if constexpr (Reverse)
-		{
-			container_type::avl_next(h_);
-		}
-		else
-		{
-			container_type::avl_prev(h_);
-		}
+		container_type::prev_of(h_);
+
 		return *this;
 	}
 
@@ -152,30 +167,6 @@ private:
 	link_type* h_;
 };
 
-template<typename T>
-concept AVLTreeKey=
-requires(T a, T b)
-{
-	a <=> b;
-};
-
-template<AVLTreeKey T>
-struct avl_default_comparer
-{
-	auto operator()(const T& a, const T& b)
-	{
-		return a <=> b;
-	}
-};
-
-template<typename T>
-struct avl_default_deleter
-{
-	void operator()(T* ptr)
-	{
-		delete ptr;
-	}
-};
 
 template<typename T, AVLTreeKey TKey,
 		TKey T::*Key,
@@ -191,14 +182,10 @@ public:
 	using size_type = size_t;
 	using ssize_type = int64_t;
 	using link_type = avl_tree_link<T, Key>;
-	using iterator_type = avl_tree_iterator<T, Key, Link, TCmp, false, EnableLock>;
+	using iterator_type = avl_tree_iterator<T, avl_tree, EnableLock>;
 	using riterator_type = kbl::reversed_iterator<iterator_type>;
 
-	template<typename S, auto S::*K,
-			avl_tree_link<S, K> S::*L,
-			typename C,
-			bool,
-			bool>
+	template<typename, typename, bool>
 	friend
 	class avl_tree_iterator;
 
@@ -247,7 +234,7 @@ public:
 
 	iterator_type begin()
 	{
-		return iterator_type{ avl_first(&root_) };
+		return iterator_type{ first_of(root_) };
 	}
 
 	iterator_type end()
@@ -322,6 +309,64 @@ private:
 		return root;
 	}
 
+
+	static inline link_type* next_of(link_type* node)
+	{
+		if (node->parent == nullptr)return nullptr;
+
+		if (node->right)
+		{
+			return first_of(node->right);
+		}
+
+		link_type* parent = nullptr;
+		while ((parent = node->parent) && node == parent->right)
+			node = parent;
+
+		return parent;
+	}
+
+	static inline link_type* prev_of(link_type* node)
+	{
+		if (node->parent == nullptr)return nullptr;
+
+		if (node->left)
+		{
+			return last_of(node->left);
+		}
+
+		link_type* parent = nullptr;
+		while ((parent = node->parent) && node == parent->left)
+			node = parent;
+
+		return parent;
+	}
+
+	static inline link_type* first_of(link_type* root)
+	{
+		if (root->left == nullptr)
+			return root;
+
+		auto left = root->left;
+		while (left->left)
+			left = left->left;
+
+		return left;
+	}
+
+	static inline link_type* last_of(link_type* root)
+	{
+
+		if (root->right == nullptr)
+			return root;
+
+		auto right = root->right;
+		while (right->right)
+			right = right->right;
+
+		return right;
+	}
+
 	inline auto compare(link_type* n1, link_type* n2)
 	{
 		return cmp_(key_of(n1), key_of(n2));
@@ -335,14 +380,18 @@ private:
 			return newnode;
 		}
 
-		auto cmp_val = compare(newnode, root);// cmp_(newnode->owner->*Key, root->owner->*Key);
+		auto cmp_val = compare(newnode, root);
 		if (cmp_val < 0)
 		{
-			root->left = insert(newnode, root->left);
+			auto new_left = insert(newnode, root->left);
+			root->left = new_left;
+			new_left->parent = root;
 		}
 		else if (cmp_val > 0)
 		{
-			root->right = insert(newnode, root->right);
+			auto new_right = insert(newnode, root->right);
+			root->right = new_right;
+			new_right->parent = root;
 		}
 		else
 		{
@@ -378,12 +427,14 @@ private:
 	{
 		if (root->left == nullptr && root->right == nullptr)
 		{
+			root->parent = nullptr;
 			root = nullptr;
 			--size_;
 		}
 		else if (root->left == nullptr || root->right == nullptr)
 		{
 			auto newroot = root->left ? root->left : root->right;
+			root->parent = nullptr;
 			root = newroot;
 			--size_;
 		}
@@ -391,11 +442,13 @@ private:
 		{
 			auto newroot = min_node(root->right);
 
-			root->right = remove(root->right, newroot);
+			root->right = remove(root->right, newroot); // it must be a leaf, so this will not cause infinite recursion
 
 			newroot->left = root->left;
 			newroot->right = root->right;
+			newroot->parent = root->parent;
 
+			root->parent = nullptr;
 			root = newroot;
 		}
 
@@ -460,6 +513,7 @@ private:
 
 		return root;
 	}
+
 
 private:
 	size_type size_{ 0 };
