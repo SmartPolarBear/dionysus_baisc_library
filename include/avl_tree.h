@@ -160,7 +160,7 @@ requires(T a, T b)
 };
 
 template<AVLTreeKey T>
-struct avl_default_cmp
+struct avl_default_comparer
 {
 	auto operator()(const T& a, const T& b)
 	{
@@ -168,11 +168,22 @@ struct avl_default_cmp
 	}
 };
 
+template<typename T>
+struct avl_default_deleter
+{
+	void operator()(T* ptr)
+	{
+		delete ptr;
+	}
+};
+
 template<typename T, AVLTreeKey TKey,
 		TKey T::*Key,
 		avl_tree_link<T, Key> T::*Link,
-		typename TCmp= avl_default_cmp<TKey>,
-		bool EnableLock = false>
+		bool EnableLock = false,
+		bool CallDeleteOnRemoval = false,
+		typename TCmp= avl_default_comparer<TKey>,
+		typename TDeleter=avl_default_deleter<T>>
 class avl_tree
 {
 public:
@@ -191,21 +202,36 @@ public:
 	friend
 	class avl_tree_iterator;
 
+	void insert(T* val)
+	{
+		root_ = insert(&(val->*Link), root_);
+	}
+
 	void insert(T& val)
 	{
-		root_ = insert(&(val.*Link), root_);
+		insert(&val);
+	}
+
+	void remove(T* val)
+	{
+		root_ = remove(&(val->*Link), root_);
+
+		if constexpr (CallDeleteOnRemoval)
+		{
+			deleter_(val);
+		}
 	}
 
 	void remove(T& val)
 	{
-		root_ = remove(&(val.*Link), root_);
+		remove(&val);
 	}
 
 	void clear()
 	{
 		for (link_type* victim = max_node(root_); victim; victim = max_node(root_))
 		{
-			root_ = remove(victim, root_);
+			remove(victim->owner);
 		}
 	}
 
@@ -326,20 +352,20 @@ private:
 		update_height(root);
 
 		auto bf = balance_factor(root);
-		if (bf > 1 && /*cmp_(newnode->owner->*Key, root->left->owner->*Key)*/compare(newnode, root->left) > 0)
+		if (bf > 1 && compare(newnode, root->left) > 0)
 		{
 			root->left = left_rotate(root->left);
 			return right_rotate(root);
 		}
-		else if (bf > 1 && /*cmp_(newnode->owner->*Key, root->left->owner->*Key)*/compare(newnode, root->left) < 0)
+		else if (bf > 1 && compare(newnode, root->left) < 0)
 		{
 			return right_rotate(root);
 		}
-		else if (bf < -1 && /*cmp_(newnode->owner->*Key, root->right->owner->*Key)*/compare(newnode, root->right) > 0)
+		else if (bf < -1 && compare(newnode, root->right) > 0)
 		{
 			return left_rotate(root);
 		}
-		else if (bf < -1 && /*cmp_(newnode->owner->*Key, root->right->owner->*Key)*/ compare(newnode, root->right) < 0)
+		else if (bf < -1 && compare(newnode, root->right) < 0)
 		{
 			root->right = right_rotate(root->right);
 			return left_rotate(root);
@@ -439,6 +465,7 @@ private:
 	size_type size_{ 0 };
 	link_type* root_{ nullptr };
 	TCmp cmp_{};
+	TDeleter deleter_{};
 };
 
 }

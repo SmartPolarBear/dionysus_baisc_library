@@ -25,7 +25,7 @@ public:
 
 	avl_tree_link<avl_test_class, &avl_test_class::value> link{ this };
 
-	using tree_type = avl_tree<avl_test_class, decltype(value), &avl_test_class::value, &avl_test_class::link>;
+	using tree_type = avl_tree<avl_test_class, decltype(value), &avl_test_class::value, &avl_test_class::link, false, true>;
 };
 
 class AVLTreeSingleTestFixture : public testing::Test
