@@ -133,6 +133,14 @@ TEST_F(AVLTreeSingleTestFixture, SequentialTraversalWithIterators)
 	}
 
 	{
+		size_t counter = 0;
+		for (auto iter = tree.cbegin(); iter != tree.cend(); iter++)
+		{
+			EXPECT_EQ(iter->value, sorted_src[counter++]);
+		}
+	}
+
+	{
 		int64_t counter = SRC_SIZE - 1;
 		for (auto iter = tree.rbegin(); iter != tree.rend(); iter++)
 		{

@@ -229,6 +229,7 @@ public:
 	using link_type = avl_tree_link<T, Key>;
 	using iterator_type = avl_tree_iterator<T, avl_tree, EnableLock>;
 	using riterator_type = kbl::reversed_iterator<iterator_type>;
+	using const_iterator_type = const iterator_type;
 
 	template<typename, typename, bool>
 	friend
@@ -303,6 +304,16 @@ public:
 	riterator_type rend()
 	{
 		return riterator_type{ &front_sentinel_, this };
+	}
+
+	const_iterator_type cbegin() const
+	{
+		return const_iterator_type{ first_of(root_), const_cast<avl_tree*>( this) };
+	}
+
+	const_iterator_type cend() const
+	{
+		return const_iterator_type{ const_cast<link_type*>( &back_sentinel_), const_cast<avl_tree*>( this) };
 	}
 
 	T& front()
