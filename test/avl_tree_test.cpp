@@ -100,11 +100,8 @@ TEST_F(AVLTreeSingleTestFixture, Clear)
 	EXPECT_EQ(tree.empty(), true);
 }
 
-TEST_F(AVLTreeSingleTestFixture, SquentialTraversal)
+TEST_F(AVLTreeSingleTestFixture, SequentialTraversal)
 {
-	EXPECT_EQ(tree.begin()->value, sorted_src[0]);
-	EXPECT_EQ((--tree.end())->value, sorted_src[10]);
-
 	{
 		size_t counter = 0;
 		for (auto& item:tree)
@@ -122,7 +119,24 @@ TEST_F(AVLTreeSingleTestFixture, SquentialTraversal)
 	}
 }
 
-TEST_F(AVLTreeSingleTestFixture, SquentialTraversalWithIterators)
+TEST_F(AVLTreeSingleTestFixture, SequentialTraversalWithIterators)
 {
+	EXPECT_EQ(tree.begin()->value, sorted_src[0]);
+	EXPECT_EQ((--tree.end())->value, sorted_src[10]);
 
+	{
+		size_t counter = 0;
+		for (auto iter = tree.begin(); iter != tree.end(); iter++)
+		{
+			EXPECT_EQ(iter->value, sorted_src[counter++]);
+		}
+	}
+
+	{
+		int64_t counter = SRC_SIZE - 1;
+		for (auto iter = tree.rbegin(); iter != tree.rend(); iter++)
+		{
+			EXPECT_EQ(iter->value, sorted_src[counter--]);
+		}
+	}
 }
