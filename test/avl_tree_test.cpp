@@ -102,9 +102,23 @@ TEST_F(AVLTreeSingleTestFixture, Clear)
 
 TEST_F(AVLTreeSingleTestFixture, SquentialTraversal)
 {
-	for (auto& item:tree)
-	{
+	EXPECT_EQ(tree.begin()->value, sorted_src[0]);
+	EXPECT_EQ((--tree.end())->value, sorted_src[10]);
 
+	{
+		size_t counter = 0;
+		for (auto& item:tree)
+		{
+			EXPECT_EQ(item.value, sorted_src[counter++]);
+		}
+	}
+
+	{
+		int64_t counter = SRC_SIZE - 1;
+		for (auto& item:tree | kbl::reversed)
+		{
+			EXPECT_EQ(item.value, sorted_src[counter--]);
+		}
 	}
 }
 

@@ -41,7 +41,35 @@ struct avl_tree_link
 
 	bool sentinel{ false };
 
-	avl_tree_link* left{ nullptr }, * right{ nullptr }, * parent{ nullptr };
+	avl_tree_link* left{ nullptr }, * right{ nullptr };
+
+	union
+	{
+		avl_tree_link* parent;
+		avl_tree_link* root; // used when sentinel == true
+	};
+
+	void set_left(avl_tree_link* l)
+	{
+		if (left && left->parent == this)
+			left->parent = nullptr;
+
+		left = l;
+
+		if (left)
+			left->parent = this;
+	}
+
+	void set_right(avl_tree_link* r)
+	{
+		if (right && right->parent == this)
+			right->parent = nullptr;
+
+		right = r;
+
+		if (right)
+			right->parent = this;
+	}
 
 	[[nodiscard]] avl_tree_link()
 			: owner(nullptr),
@@ -106,13 +134,13 @@ public:
 public:
 	avl_tree_iterator() = default;
 
-	explicit avl_tree_iterator(link_type* h) :
-			h_(h)
+	explicit avl_tree_iterator(link_type* h, container_type* cont) :
+			h_(h),
+			cont_(cont)
 	{
 	}
 
-	avl_tree_iterator(avl_tree_iterator
-	&& another) noexcept
+	avl_tree_iterator(avl_tree_iterator&& another) noexcept
 	{
 		h_ = another.h_;
 		another.h_ = nullptr;
@@ -139,7 +167,7 @@ public:
 
 	T* operator->()
 	{
-		return h_->parent->owner;
+		return h_->owner;
 	}
 
 	bool operator==(avl_tree_iterator const& other) const
@@ -154,7 +182,7 @@ public:
 
 	avl_tree_iterator& operator++()
 	{
-		container_type::next_of(h_);
+		h_ = cont_->next_of(h_);
 		return *this;
 	}
 
@@ -167,7 +195,7 @@ public:
 
 	avl_tree_iterator& operator--()
 	{
-		container_type::prev_of(h_);
+		h_ = cont_->prev_of(h_);
 
 		return *this;
 	}
@@ -181,6 +209,7 @@ public:
 
 private:
 	link_type* h_;
+	container_type* cont_;
 };
 
 
@@ -205,9 +234,16 @@ public:
 	friend
 	class avl_tree_iterator;
 
+public:
+	avl_tree()
+	{
+	}
+
 	void insert(T* val)
 	{
 		root_ = insert(&(val->*Link), root_);
+		update_sentinels();
+
 	}
 
 	void insert(T& val)
@@ -218,6 +254,7 @@ public:
 	void remove(T* val)
 	{
 		root_ = remove(&(val->*Link), root_);
+		update_sentinels();
 
 		if constexpr (CallDeleteOnRemoval)
 		{
@@ -250,12 +287,32 @@ public:
 
 	iterator_type begin()
 	{
-		return iterator_type{ first_of(root_) };
+		return iterator_type{ first_of(root_), this };
 	}
 
 	iterator_type end()
 	{
-		return iterator_type{ &sentinel_ };
+		return iterator_type{ &back_sentinel_, this };
+	}
+
+	riterator_type rbegin()
+	{
+		return riterator_type{ last_of(root_), this };
+	}
+
+	riterator_type rend()
+	{
+		return riterator_type{ &front_sentinel_, this };
+	}
+
+	T& front()
+	{
+		return *(first_of(root_)->owner);
+	}
+
+	T& back()
+	{
+		return *(last_of(root_)->owner);
 	}
 
 private:
@@ -283,8 +340,10 @@ private:
 	{
 		auto right = root->right;
 
-		root->right = right->left;
-		right->left = root;
+		root->set_right(right->left);
+		right->set_left(root);
+//		root->right = right->left;
+//		right->left = root;
 
 		update_height(right);
 		update_height(root);
@@ -296,8 +355,11 @@ private:
 	{
 		auto left = root->left;
 
-		root->left = left->right;
-		left->right = root;
+		root->set_left(left->right);
+		left->set_right(root);
+
+//		root->left = left->right;
+//		left->right = root;
 
 		update_height(root);
 		update_height(left);
@@ -325,10 +387,18 @@ private:
 		return root;
 	}
 
-
-	static inline link_type* next_of(link_type* node)
+	void update_sentinels()
 	{
-		if (node->parent == nullptr)return nullptr;
+		back_sentinel_.root = root_;
+		front_sentinel_.root = root_;
+	}
+
+	link_type* next_of(link_type* node)
+	{
+		if (node->sentinel)return node;
+
+		if (node->parent == nullptr && node->left == nullptr && node->right == nullptr)
+			return nullptr;
 
 		if (node->right)
 		{
@@ -339,12 +409,16 @@ private:
 		while ((parent = node->parent) && node == parent->right)
 			node = parent;
 
+		if (!parent)return &back_sentinel_;
+
 		return parent;
 	}
 
-	static inline link_type* prev_of(link_type* node)
+	link_type* prev_of(link_type* node)
 	{
-		if (node->parent == nullptr)return nullptr;
+		if (node->sentinel)return last_of(node->root);
+
+		if (node->parent == nullptr && node->left == nullptr && node->right == nullptr)return nullptr;
 
 		if (node->left)
 		{
@@ -355,11 +429,15 @@ private:
 		while ((parent = node->parent) && node == parent->left)
 			node = parent;
 
+		if (!parent)return &front_sentinel_; // the very first
+
 		return parent;
 	}
 
 	static inline link_type* first_of(link_type* root)
 	{
+		if (root->sentinel)return nullptr;
+
 		if (root->left == nullptr)
 			return root;
 
@@ -372,6 +450,7 @@ private:
 
 	static inline link_type* last_of(link_type* root)
 	{
+		if (root->sentinel)return nullptr;
 
 		if (root->right == nullptr)
 			return root;
@@ -383,10 +462,10 @@ private:
 		return right;
 	}
 
-	inline std::strong_ordering compare(link_type* n1, link_type* n2)
+	std::strong_ordering compare(link_type* n1, link_type* n2)
 	{
-		if (n1->sentinel)return std::strong_ordering::greater;
-		else if (n2->sentinel)return std::strong_ordering::less;
+		if (n1->sentinel)return 1 <=> -1;
+		else if (n2->sentinel)return -1 <=> 1;
 		else return cmp_(key_of(n1), key_of(n2));
 	}
 
@@ -401,15 +480,17 @@ private:
 		auto cmp_val = compare(newnode, root);
 		if (cmp_val < 0)
 		{
-			auto new_left = insert(newnode, root->left);
-			root->left = new_left;
-			new_left->parent = root;
+//			auto new_left = insert(newnode, root->left);
+//			root->left = new_left;
+//			new_left->parent = root;
+			root->set_left(insert(newnode, root->left));
 		}
 		else if (cmp_val > 0)
 		{
-			auto new_right = insert(newnode, root->right);
-			root->right = new_right;
-			new_right->parent = root;
+//			auto new_right = insert(newnode, root->right);
+//			root->right = new_right;
+//			new_right->parent = root;
+			root->set_right(insert(newnode, root->right));
 		}
 		else
 		{
@@ -421,7 +502,8 @@ private:
 		auto bf = balance_factor(root);
 		if (bf > 1 && compare(newnode, root->left) > 0)
 		{
-			root->left = left_rotate(root->left);
+//			root->left = left_rotate(root->left);
+			root->set_left(left_rotate(root->left));
 			return right_rotate(root);
 		}
 		else if (bf > 1 && compare(newnode, root->left) < 0)
@@ -434,7 +516,8 @@ private:
 		}
 		else if (bf < -1 && compare(newnode, root->right) < 0)
 		{
-			root->right = right_rotate(root->right);
+//			root->right = right_rotate(root->right);
+			root->set_right(right_rotate(root->right));
 			return left_rotate(root);
 		}
 
@@ -452,6 +535,7 @@ private:
 		else if (root->left == nullptr || root->right == nullptr)
 		{
 			auto newroot = root->left ? root->left : root->right;
+			newroot->parent = root->parent;
 			root->parent = nullptr;
 			root = newroot;
 			--size_;
@@ -460,13 +544,20 @@ private:
 		{
 			auto newroot = min_node(root->right);
 
-			root->right = remove(root->right, newroot); // it must be a leaf, so this will not cause infinite recursion
+			// it must be a leaf, so this will not cause infinite recursion
+//			root->right = remove(root->right, newroot);
+			root->set_right(remove(root->right, newroot));
 
-			newroot->left = root->left;
-			newroot->right = root->right;
+//			newroot->left = root->left;
+//			newroot->right = root->right;
+//			newroot->parent = root->parent;
+
+			newroot->set_left(root->left);
+			newroot->set_right(root->right);
+
 			newroot->parent = root->parent;
-
 			root->parent = nullptr;
+
 			root = newroot;
 		}
 
@@ -483,11 +574,13 @@ private:
 
 		if (auto cmp_val = compare(node, root);cmp_val < 0)
 		{
-			root->left = remove(node, root->left);
+//			root->left = remove(node, root->left);
+			root->set_left(remove(node, root->left));
 		}
 		else if (cmp_val > 0)
 		{
-			root->right = remove(node, root->right);
+//			root->right = remove(node, root->right);
+			root->set_right(remove(node, root->right));
 		}
 		else
 		{
@@ -512,7 +605,8 @@ private:
 		// Left Right Case
 		if (bf > 1 && balance_factor(root->left) < 0)
 		{
-			root->left = left_rotate(root->left);
+//			root->left = left_rotate(root->left);
+			root->set_left(left_rotate(root->left));
 			return right_rotate(root);
 		}
 
@@ -525,7 +619,8 @@ private:
 		// Right Left Case
 		if (bf < -1 && balance_factor(root->right) > 0)
 		{
-			root->right = right_rotate(root->right);
+//			root->right = right_rotate(root->right);
+			root->set_right(right_rotate(root->right));
 			return left_rotate(root);
 		}
 
@@ -539,7 +634,8 @@ private:
 	TCmp cmp_{};
 	TDeleter deleter_{};
 
-	link_type sentinel_{ true };
+	link_type back_sentinel_{ true };
+	link_type front_sentinel_{ true };
 };
 
 }
