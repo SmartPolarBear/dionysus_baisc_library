@@ -276,6 +276,31 @@ public:
 		}
 	}
 
+	T* find_ptr(TKey key)
+	{
+
+	}
+
+	T& find(TKey)
+	{
+		
+	}
+
+	avl_tree& join(avl_tree& another)
+	{
+
+	}
+
+	avl_tree& unite(avl_tree& another)
+	{
+
+	}
+
+	avl_tree& split(link_type pos)
+	{
+
+	}
+
 	[[nodiscard]] size_type size() const
 	{
 		return size_;
@@ -316,14 +341,24 @@ public:
 		return const_iterator_type{ const_cast<link_type*>( &back_sentinel_), const_cast<avl_tree*>( this) };
 	}
 
+	T* front_ptr()
+	{
+		return (first_of(root_)->owner);
+	}
+
+	T* back_ptr()
+	{
+		return (last_of(root_)->owner);
+	}
+
 	T& front()
 	{
-		return *(first_of(root_)->owner);
+		return *front_ptr();
 	}
 
 	T& back()
 	{
-		return *(last_of(root_)->owner);
+		return *back_ptr();
 	}
 
 private:
