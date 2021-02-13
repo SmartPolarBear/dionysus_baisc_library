@@ -17,7 +17,7 @@
 // docs/thread_annotations.md.  The macros we use are:
 //
 // TA_CAP(x)                    |x| is the capability this type represents, e.g. "mutex".
-// TA_GUARDED(x)                the annotated variable is guarded by the capability (e.g. lock) |x|
+// TA_GUARDED(x)                the annotated variable is guarded by the capability (e.g. lock_) |x|
 // TA_ACQ(x)                    function acquires the mutex |x|
 // TA_ACQ_SHARED(x)             function acquires the mutex |x| for shared reading
 // TA_ACQ_BEFORE(x)             Indicates that if both this mutex and muxex |x| are to be acquired,

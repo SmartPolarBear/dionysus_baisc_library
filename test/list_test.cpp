@@ -16,16 +16,25 @@ public:
 	{
 	}
 
-	bool operator<(const list_test_class& rhs) const
+	bool operator<(const list_test_class &rhs) const
 	{
 		return value < rhs.value;
 	}
 
-	int value{ 0 };
+	int value{0};
 
-	list_link<list_test_class, std::mutex> link{ this };
-	using list_type = intrusive_list<list_test_class, std::mutex, &list_test_class::link, true, true>;
-	using list_type_no_delete = intrusive_list<list_test_class, std::mutex, &list_test_class::link, true, false>;
+	list_link<list_test_class, std::mutex> link{this};
+
+	using list_type = intrusive_list_with_default_trait<list_test_class,
+														std::mutex,
+														&list_test_class::link,
+														true,
+														operator_delete_list_deleter<list_test_class>>;
+
+	using list_type_no_delete = intrusive_list_with_default_trait<list_test_class,
+																  std::mutex,
+																  &list_test_class::link,
+																  false>;
 
 };
 
@@ -36,16 +45,16 @@ protected:
 	{
 		for (int i = 0; i <= 10; i++)
 		{
-			auto t = new list_test_class{ i };
+			auto t = new list_test_class{i};
 			list.push_back(t);
 		}
 
-		one_element.push_back(new list_test_class{ 20011204 });
+		one_element.push_back(new list_test_class{20011204});
 	}
 
 	void TearDown() override
 	{
-		list.clear(true);
+		list.clear();
 	}
 
 	list_test_class::list_type list;
@@ -60,21 +69,21 @@ protected:
 	{
 		for (int i = 0; i < 5; i++)
 		{
-			auto t = new list_test_class{ 2 * i + 1 };
+			auto t = new list_test_class{2 * i + 1};
 			list1.push_back(t);
 		}
 
 		for (int i = 1; i <= 5; i++)
 		{
-			auto t = new list_test_class{ 2 * i };
+			auto t = new list_test_class{2 * i};
 			list2.push_back(t);
 		}
 	}
 
 	void TearDown() override
 	{
-		list1.clear(true);
-		list2.clear(true);
+		list1.clear();
+		list2.clear();
 	}
 
 	list_test_class::list_type list1;
@@ -94,7 +103,7 @@ TEST_F(ListSingleTestFixture, Size)
 TEST_F(ListSingleTestFixture, ForIteration)
 {
 	//empty
-	for (auto& i:empty_list)
+	for (auto &i:empty_list)
 	{
 	}
 
@@ -117,14 +126,14 @@ TEST_F(ListSingleTestFixture, ForIteration)
 	// r is a reference
 	{
 		int counter = 0;
-		for (auto& r:list)
+		for (auto &r:list)
 		{
 			EXPECT_EQ(r.value, counter++);
 			r.value += 10;
 		}
 
 		counter = 0;
-		for (auto& r:list)
+		for (auto &r:list)
 		{
 			EXPECT_EQ(r.value, 10 + (counter++));
 		}
@@ -194,7 +203,6 @@ TEST_F(ListSingleTestFixture, IterationByConstIterators)
 
 }
 
-
 TEST_F(ListSingleTestFixture, Clear)
 {
 	list.clear();
@@ -242,7 +250,6 @@ TEST_F(ListSingleTestFixture, Removal)
 		EXPECT_EQ(iter->value, 5);
 	}
 
-
 	{
 		auto iter = list.rbegin();
 		iter++;
@@ -284,8 +291,8 @@ TEST_F(ListSingleTestFixture, DoubleRemoval)
 
 TEST_F(ListSingleTestFixture, Insert)
 {
-	list.push_front(new list_test_class{ 2001 });
-	list.push_back(new list_test_class{ 1204 });
+	list.push_front(new list_test_class{2001});
+	list.push_back(new list_test_class{1204});
 
 	EXPECT_EQ(list.size(), 13);
 	EXPECT_EQ(list.size_slow(), 13);
@@ -326,8 +333,8 @@ TEST_F(ListMultipleTestFixture, Merge)
 	EXPECT_EQ(list2.size_slow(), 0);
 
 	{
-		int target_result[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, cnt = 0;
-		for (auto& i:list1)
+		int target_result[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, cnt = 0;
+		for (auto &i:list1)
 		{
 			EXPECT_EQ(i.value, target_result[cnt++]);
 		}
@@ -345,8 +352,8 @@ TEST_F(ListMultipleTestFixture, SpliceFront)
 	EXPECT_EQ(list2.size_slow(), 0);
 
 	{
-		int target_result[] = { 2, 4, 6, 8, 10, 1, 3, 5, 7, 9, }, cnt = 0;
-		for (auto& i:list1)
+		int target_result[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9,}, cnt = 0;
+		for (auto &i:list1)
 		{
 			EXPECT_EQ(i.value, target_result[cnt++]);
 		}
@@ -364,8 +371,8 @@ TEST_F(ListMultipleTestFixture, SpliceOnCertainPos)
 	EXPECT_EQ(list2.size_slow(), 0);
 
 	{
-		int target_result[] = { 1, 3, 2, 4, 6, 8, 10, 5, 7, 9, }, cnt = 0;
-		for (auto& i:list1)
+		int target_result[] = {1, 3, 2, 4, 6, 8, 10, 5, 7, 9,}, cnt = 0;
+		for (auto &i:list1)
 		{
 			EXPECT_EQ(i.value, target_result[cnt++]);
 		}
