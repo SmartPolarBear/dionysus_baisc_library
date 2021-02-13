@@ -10,6 +10,14 @@
 
 namespace kbl
 {
+
+template<typename T, typename E>
+concept Deleter =
+requires(T del, E *ptr)
+{
+	del(ptr);
+};
+
 // linked list head_
 template<typename TParent, typename TMutex>
 struct list_link
@@ -58,7 +66,7 @@ struct list_link
 		prev = another.prev;
 	}
 
-	explicit list_link(TParent * NULLABLE p) : parent{p}, is_head{false}, next{this}, prev{this}
+	explicit list_link(TParent *NULLABLE p) : parent{p}, is_head{false}, next{this}, prev{this}
 	{
 	}
 
@@ -80,6 +88,16 @@ struct list_link
 	}
 };
 
+template<typename T, typename U, typename Mutex>
+concept NodeTrait =
+requires(U &u)
+{
+	{ T::node_link(u) }->std::convertible_to<list_link<U, Mutex> &>;
+	{ T::node_link(&u) }->std::convertible_to<list_link<U, Mutex> &>;
+	{ T::node_link_ptr(u) }->std::convertible_to<list_link<U, Mutex> *>;
+	{ T::node_link_ptr(&u) }->std::convertible_to<list_link<U, Mutex> *>;
+};
+
 template<typename T, typename TMutex, class Container, bool EnableLock = false>
 class intrusive_list_iterator
 {
@@ -95,7 +113,7 @@ public:
 public:
 	constexpr intrusive_list_iterator() = default;
 
-	constexpr explicit intrusive_list_iterator(head_type * NONNULL h) : h_(h)
+	constexpr explicit intrusive_list_iterator(head_type *NONNULL h) : h_(h)
 	{
 	}
 
@@ -136,7 +154,7 @@ public:
 		return *operator->();
 	}
 
-	T * NULLABLE operator->()
+	T *NULLABLE operator->()
 	{
 		return h_->parent;
 	}
@@ -198,8 +216,50 @@ public:
 private:
 	using lock_guard_type = ktl::mutex::lock_guard<TMutex>;
 
-	head_type * NONNULL h_;
+	head_type *NONNULL h_;
 	mutable mutex_type lock_;
+};
+
+template<typename T, typename TMut, list_link<T, TMut> T::*Link>
+struct default_list_node_trait
+{
+	static list_link<T, TMut> &node_link(T &element)
+	{
+		return element.*Link;
+	}
+
+	static list_link<T, TMut> &node_link(T *NONNULL element)
+	{
+		return element->*Link;
+	}
+
+	static list_link<T, TMut> *NONNULL node_link_ptr(T &element)
+	{
+		return &node_link(element);
+	}
+
+	static list_link<T, TMut> *NONNULL node_link_ptr(T *NONNULL element)
+	{
+		return &node_link(element);
+	}
+};
+
+template<typename T>
+struct default_list_deleter
+{
+	void operator()(T *NONNULL ptr)
+	{
+		// do nothing
+	}
+};
+
+template<typename T>
+struct operator_delete_list_deleter
+{
+	void operator()(T *NONNULL ptr)
+	{
+		delete ptr;
+	}
 };
 
 #pragma push_macro("list_for")
@@ -218,65 +278,6 @@ private:
 
 #define list_for_safe(pos, n, head) \
     for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
-
-template<typename T, typename U, typename Mutex>
-concept NodeTrait =
-requires(U &u)
-{
-	{ T::node_link(u) }->std::convertible_to<list_link<U, Mutex> &>;
-	{ T::node_link(&u) }->std::convertible_to<list_link<U, Mutex> &>;
-	{ T::node_link_ptr(u) }->std::convertible_to<list_link<U, Mutex> *>;
-	{ T::node_link_ptr(&u) }->std::convertible_to<list_link<U, Mutex> *>;
-};
-
-template<typename T, typename E>
-concept Deleter =
-requires(T del, E *ptr)
-{
-	del(ptr);
-};
-
-template<typename T, typename TMut, list_link<T, TMut> T::*Link>
-struct default_list_node_trait
-{
-	static list_link<T, TMut> &node_link(T &element)
-	{
-		return element.*Link;
-	}
-
-	static list_link<T, TMut> &node_link(T *NONNULL element)
-	{
-		return element->*Link;
-	}
-
-	static list_link<T, TMut> * NONNULL node_link_ptr(T &element)
-	{
-		return &node_link(element);
-	}
-
-	static list_link<T, TMut> * NONNULL node_link_ptr(T *NONNULL element)
-	{
-		return &node_link(element);
-	}
-};
-
-template<typename T>
-struct default_list_deleter
-{
-	void operator()(T * NONNULL ptr)
-	{
-		// do nothing
-	}
-};
-
-template<typename T>
-struct operator_delete_list_deleter
-{
-	void operator()(T * NONNULL ptr)
-	{
-		delete ptr;
-	}
-};
 
 template<typename T,
 	typename TMutex,
@@ -361,7 +362,7 @@ public:
 		return *head_.next->parent;
 	}
 
-	T * NULLABLE front_ptr()
+	T *NULLABLE front_ptr()
 	{
 		return head_.next->parent;
 	}
@@ -373,7 +374,7 @@ public:
 		return *head_.prev->parent;
 	}
 
-	T * NULLABLE back_ptr()
+	T *NULLABLE back_ptr()
 	{
 		return head_.prev->parent;
 	}
