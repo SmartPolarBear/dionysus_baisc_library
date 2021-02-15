@@ -100,6 +100,27 @@ TEST_F(ListSingleTestFixture, Size)
 
 }
 
+TEST_F(ListSingleTestFixture, MoveConstruct)
+{
+	list_test_class::list_type newlist = std::move(list);
+	EXPECT_FALSE(newlist.empty());
+	EXPECT_EQ(newlist.size(), 11);
+	EXPECT_EQ(newlist.size_slow(), 11);
+
+	EXPECT_TRUE(list.empty());
+	EXPECT_EQ(list.size(), 0);
+	EXPECT_EQ(list.size_slow(), 0);
+
+	{
+		int counter = 0;
+		for (auto iter = newlist.cbegin(); iter != newlist.cend(); iter++)
+		{
+			EXPECT_EQ(iter->value, counter++);
+		}
+	}
+
+}
+
 TEST_F(ListSingleTestFixture, ForIteration)
 {
 	//empty
@@ -280,8 +301,7 @@ TEST_F(ListSingleTestFixture, DoubleRemoval)
 	one_element.remove(*item);
 	one_element.remove(*item);
 
-	EXPECT_EQ(item->link.next, &item->link);
-	EXPECT_EQ(item->link.prev, &item->link);
+	EXPECT_TRUE(item->link.is_empty_or_detached());
 
 	EXPECT_EQ(one_element.size(), 0);
 	EXPECT_EQ(one_element.size_slow(), 0);

@@ -528,14 +528,14 @@ private:
 		{
 //			auto new_left = insert(newnode, root->left);
 //			root->left = new_left;
-//			new_left->parent = root;
+//			new_left->parent_ = root;
 			root->set_left(insert(newnode, root->left));
 		}
 		else if (cmp_val > 0)
 		{
 //			auto new_right = insert(newnode, root->right);
 //			root->right = new_right;
-//			new_right->parent = root;
+//			new_right->parent_ = root;
 			root->set_right(insert(newnode, root->right));
 		}
 		else
@@ -596,7 +596,7 @@ private:
 
 //			newroot->left = root->left;
 //			newroot->right = root->right;
-//			newroot->parent = root->parent;
+//			newroot->parent_ = root->parent_;
 
 			newroot->set_left(root->left);
 			newroot->set_right(root->right);
