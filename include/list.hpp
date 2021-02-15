@@ -26,7 +26,7 @@ requires(T del, E *ptr)
 	del(ptr);
 };
 
-// linked list head_
+// linked list head
 template<typename TParent, typename TMutex>
 class list_link
 {
@@ -105,7 +105,7 @@ public:
 	TParent *NULLABLE parent_;
 	list_link *NONNULL next_, *NONNULL prev_;
 
-	mutable TMutex lock;
+	mutable TMutex lock_;
 };
 
 template<typename T, typename U, typename Mutex>
@@ -316,6 +316,8 @@ public:
 	using iterator_type = intrusive_list_iterator<T, TMutex, container_type, EnableLock>;
 	using riterator_type = kbl::reversed_iterator<iterator_type>;
 	using const_iterator_type = const iterator_type;
+
+	static_assert(std::is_standard_layout_v<head_type>);
 
 public:
 	/// New empty list
@@ -869,7 +871,7 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g{head->lock};
+			lock_guard_type g{head->lock_};
 			util_list_init(head);
 		}
 		else
@@ -884,8 +886,8 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{newnode->lock};
-			lock_guard_type g2{head->lock};
+			lock_guard_type g1{newnode->lock_};
+			lock_guard_type g2{head->lock_};
 
 			util_list_add(newnode, head, head->next_);
 		}
@@ -901,8 +903,8 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{newnode->lock};
-			lock_guard_type g2{head->lock};
+			lock_guard_type g1{newnode->lock_};
+			lock_guard_type g2{head->lock_};
 
 			util_list_add(newnode, head->prev_, head);
 
@@ -920,7 +922,7 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{entry->lock};
+			lock_guard_type g1{entry->lock_};
 
 			util_list_remove_entry(entry);
 
@@ -941,7 +943,7 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{entry->lock};
+			lock_guard_type g1{entry->lock_};
 
 			util_list_remove_entry(entry);
 
@@ -987,7 +989,7 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g{head->lock};
+			lock_guard_type g{head->lock_};
 
 			return (head->next_) == head;
 		}
@@ -1002,8 +1004,8 @@ private:
 	{
 		if constexpr (EnableLock && !LockHeld)
 		{
-			lock_guard_type g1{e1->lock};
-			lock_guard_type g2{e2->lock};
+			lock_guard_type g1{e1->lock_};
+			lock_guard_type g2{e2->lock_};
 
 			auto *pos = e2->prev_;
 			list_remove_init<true>(e2);
@@ -1038,8 +1040,8 @@ private:
 	{
 		if constexpr (EnableLock)
 		{
-			lock_guard_type g1{list->lock};
-			lock_guard_type g2{head->lock};
+			lock_guard_type g1{list->lock_};
+			lock_guard_type g2{head->lock_};
 
 			if (!list_empty<true>(list))
 			{
@@ -1062,8 +1064,8 @@ private:
 	{
 		if constexpr (EnableLock)
 		{
-			lock_guard_type g1{list->lock};
-			lock_guard_type g2{head->lock};
+			lock_guard_type g1{list->lock_};
+			lock_guard_type g2{head->lock_};
 
 			if (!list_empty<true>(list))
 			{

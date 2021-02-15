@@ -28,7 +28,7 @@ inline constexpr defer_lock_tag defer_lock{};
 inline constexpr try_to_lock_tag try_to_lock{};
 inline constexpr adopt_lock_tag adopt_lock{};
 
-/// \brief  RAII wrapper for automatically locking and unlocking the lock
+/// \brief  RAII wrapper for automatically locking and unlocking the lock_
 /// \tparam TMutex which satisfies BasicLockable
 template<typename TMutex>
 class TA_SCOPED_CAP lock_guard //<TMutex>
