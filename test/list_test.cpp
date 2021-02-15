@@ -330,15 +330,37 @@ TEST_F(ListSingleTestFixture, FrontEnd)
 	EXPECT_EQ(list.back_ptr()->value, 10);
 }
 
-TEST_F(ListSingleTestFixture, STLFuncs)
+TEST_F(ListSingleTestFixture, STLCapability)
 {
 	{
-//		auto iter = std::find_if(list.begin(), list.end(), [](const list_test_class& t)
-//		{
-//			return t.value == 0;
-//		});
-//
-//		EXPECT_EQ(iter, list.begin());
+		auto iter = std::find_if(list.begin(), list.end(), [](const list_test_class &t)
+		{
+			return t.value == 0;
+		});
+		EXPECT_EQ(iter, list.begin());
+
+	}
+
+	{
+
+		auto count = std::count_if(list.begin(), list.end(), [](const list_test_class &t)
+		{ return t.value % 2 == 0; });
+
+		size_t count2 = 0;
+		for (auto i:list)
+		{
+			if (i.value % 2 == 0)
+			{
+				count2++;
+			}
+		}
+
+		EXPECT_EQ(count, count2);
+
+		auto count3 = std::count_if(list.begin(), list.end(), [](const list_test_class &t)
+		{ return t.value % 2 != 0; });
+
+		EXPECT_EQ(count + count3, list.size_slow());
 	}
 }
 

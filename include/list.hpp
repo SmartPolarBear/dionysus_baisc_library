@@ -125,13 +125,22 @@ public:
 	friend Container;
 
 	using value_type = T;
+
+	using reference = T &;
+	using pointer = T *;
+
+	using difference_type = std::ptrdiff_t;
+
+	using iterator_category = std::input_iterator_tag;
+
 	using mutex_type = TMutex;
 	using head_type = list_link<value_type, mutex_type>;
-	using size_type = size_t;
+
 	using dummy_type = int;
 
 public:
 	constexpr intrusive_list_iterator() = default;
+	~intrusive_list_iterator() = default;
 
 	constexpr explicit intrusive_list_iterator(head_type *NONNULL h) : h_(h)
 	{
@@ -169,27 +178,23 @@ public:
 		return *this;
 	}
 
-	T &operator*()
+	// C++ named requirements: Swappable
+	void swap(intrusive_list_iterator &other)
+	{
+		std::swap(h_, other.h_);
+	}
+
+	reference operator*()
 	{
 		return *operator->();
 	}
 
-	T *NULLABLE operator->()
+	pointer NULLABLE operator->()
 	{
 		return h_->parent_;
 	}
 
-	bool operator==(intrusive_list_iterator const &other) const
-	{
-		return h_ == other.h_;
-	}
-
-	bool operator!=(intrusive_list_iterator const &other) const
-	{
-		return !(*this == other);
-	}
-
-	intrusive_list_iterator &operator++() TA_NO_THREAD_SAFETY_ANALYSIS
+	constexpr intrusive_list_iterator &operator++() TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -204,7 +209,7 @@ public:
 		return *this;
 	}
 
-	intrusive_list_iterator &operator--() TA_NO_THREAD_SAFETY_ANALYSIS
+	constexpr intrusive_list_iterator &operator--() TA_NO_THREAD_SAFETY_ANALYSIS
 	{
 		if constexpr (EnableLock)
 		{
@@ -219,18 +224,29 @@ public:
 		return *this;
 	}
 
-	intrusive_list_iterator operator++(dummy_type) noexcept
+	constexpr intrusive_list_iterator operator++(dummy_type) noexcept
 	{
 		intrusive_list_iterator rc(*this);
 		operator++();
 		return rc;
 	}
 
-	intrusive_list_iterator operator--(dummy_type) noexcept
+	constexpr intrusive_list_iterator operator--(dummy_type) noexcept
 	{
 		intrusive_list_iterator rc(*this);
 		operator--();
 		return rc;
+	}
+
+	friend constexpr bool operator==(const intrusive_list_iterator &lhs, const intrusive_list_iterator &rhs) noexcept
+	{
+		return lhs.h_ == rhs.h_;
+
+	}
+
+	friend constexpr bool operator!=(const intrusive_list_iterator &lhs, const intrusive_list_iterator &rhs) noexcept
+	{
+		return !(lhs == rhs);
 	}
 
 private:
