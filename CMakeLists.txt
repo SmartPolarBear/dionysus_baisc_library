@@ -5,5 +5,8 @@
 
  project(dionysus-data-structure)
 
- add_subdirectory(src)
+ add_library(dbl INTERFACE)
+
+ target_include_directories(dbl INTERFACE include/)
+
  add_subdirectory(test)
