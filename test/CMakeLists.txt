@@ -3,13 +3,13 @@ project(test)
 set(CMAKE_AR "/usr/bin/ar")
 set(CMAKE_CXX_STANDARD 20)
 
-# FIXME: restore support for custom-built gtest later
-if (0)
-add_subdirectory(google_test)
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-endif()
-
 add_executable(google_test_run list_test.cpp avl_tree_test.cpp utility_test.cpp)
+
+if (BUILD_GTEST)
+    target_include_directories(google_test_run
+            PRIVATE ${gtest_SOURCE_DIR}/include
+            PRIVATE ${gtest_SOURCE_DIR})
+endif ()
 
 target_include_directories(google_test_run PRIVATE ../include)
 
