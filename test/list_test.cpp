@@ -4,8 +4,6 @@
 
 #include <algorithm>
 
-#include <ranges>
-
 using namespace kbl;
 using namespace std;
 
