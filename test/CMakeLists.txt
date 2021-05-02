@@ -3,7 +3,11 @@ project(test)
 set(CMAKE_AR "/usr/bin/ar")
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(google_test_run list_test.cpp avl_tree_test.cpp utility_test.cpp)
+add_executable(google_test_run
+        list_test.cpp
+        avl_tree_test.cpp
+        utility_test.cpp
+        fixed_point_test.cc)
 
 if (BUILD_GTEST)
     target_include_directories(google_test_run
