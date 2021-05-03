@@ -9,7 +9,7 @@ namespace kbl
 ///         Convert n to fixed point:	n * f
 ///         Convert x to integer (rounding toward zero):	x / f
 ///         Convert x to integer (rounding to nearest):	(x + f / 2) / f if x >= 0,
-///         (x - f / 2) / f if x <= 0.
+///         											(x - f / 2) / f if x <= 0.
 ///         Add x and y:	x + y
 ///         Subtract y from x:	x - y
 ///         Add x and n:	x + n * f
@@ -33,13 +33,41 @@ class fixed_point
  public:
 
 	explicit fixed_point(uint32_t n)
+		: data_{ n * FACT }
 	{
 
 	}
 
+	fixed_point add(const fixed_point& another)
+	{
+		return data_ + another.data_;
+	}
+
+	fixed_point subtract(const fixed_point& another)
+	{
+		return data_ - another.data_;
+	}
+
+	fixed_point add(int32_t n)
+	{
+		return data_ + n * FACT;
+	}
+
+	fixed_point subtract(int32_t n)
+	{
+		return data_ - n * FACT;
+	}
+
 	[[nodiscard]] int32_t to_int(roundings rounding = roundings::ROUND_TO_NEAREST)
 	{
+		if (rounding == roundings::ROUND_TO_NEAREST)
+		{
 
+		}
+		else
+		{
+
+		}
 	}
  private:
 	static constexpr int32_t FACT = 1 << Q;
