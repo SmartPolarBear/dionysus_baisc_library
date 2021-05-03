@@ -40,22 +40,44 @@ class fixed_point
 
 	fixed_point add(const fixed_point& another)
 	{
-		return data_ + another.data_;
+		return fixed_point{ data_ + another.data_ };
 	}
 
 	fixed_point subtract(const fixed_point& another)
 	{
-		return data_ - another.data_;
+		return fixed_point{ data_ - another.data_ };
 	}
 
 	fixed_point add(int32_t n)
 	{
-		return data_ + n * FACT;
+		return fixed_point{ data_ + n * FACT };
 	}
 
 	fixed_point subtract(int32_t n)
 	{
-		return data_ - n * FACT;
+		return fixed_point{ data_ - n * FACT };
+	}
+
+	fixed_point multiply(const fixed_point& another)
+	{
+		auto raw = ((int64_t)data_) * another.data_ / FACT;
+		return fixed_point{ raw };
+	}
+
+	fixed_point divide(const fixed_point& another)
+	{
+		auto raw = ((int64_t)data_) * FACT / another.data_;
+		return fixed_point{ raw };
+	}
+
+	fixed_point multiply(int32_t n)
+	{
+		return fixed_point{ data_ * n };
+	}
+
+	fixed_point divide(int32_t n)
+	{
+		return fixed_point{ data_ / n };
 	}
 
 	[[nodiscard]] int32_t to_int(roundings rounding = roundings::ROUND_TO_NEAREST)
