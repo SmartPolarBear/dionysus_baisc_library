@@ -39,5 +39,5 @@ TEST(FixPointTest, Floating)
 	ASSERT_EQ(f3.to_int(), 10);
 
 	auto f4 = f3 * f2;
-	ASSERT_EQ(f4.to_int(), 4);
+	ASSERT_EQ(f4.to_int(), int32_t(10 * 0.25));
 }
